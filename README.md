@@ -19,12 +19,21 @@
 
 # Configuración
 
-![](https://gyazo.com/fb8865ae0496892e4bf596fd77d54d7c)
+Crear un topico
+
+Crear un consumidor (dentro del contenedor):
+
+Crear un productor (dentro del contenedor):
+```sh
+  cd /bin
+  kafka-console-producer --bootstrap-server broker_3:9092 --topic nuevo_topic
+```
 
 Para verificar que el tópico tiene las configuraciones correctas:
 ```sh
   kafka-topics.sh --describe --zookeeper zookeeper:2181 --topic mi_topico
 ```
+
 ## Variables de entorno
 
 #### KAFKA_LISTENERS - KAFKA_ADVERTISED_LISTENERS
