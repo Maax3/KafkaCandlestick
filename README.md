@@ -21,6 +21,8 @@ Para verificar que el tópico tiene las configuraciones correctas:
   kafka-topics.sh --describe --zookeeper zookeeper:2181 --topic mi_topico
 ```
 
+``KAFKA_LISTENERS`` especifica dónde Kafka debe escuchar las conexiones entrantes, mientras que ``KAFKA_ADVERTISED_LISTENERS`` especifica qué endpoints deben ser anunciados a los clientes para que puedan establecer conexiones. La diferencia clave es que ``KAFKA_ADVERTISED_LISTENERS`` se utiliza para la comunicación externa con los clientes, mientras que ``KAFKA_LISTENERS`` se utiliza para la comunicación interna entre los componentes de Kafka.
+
 # Tests
 java.lang.IllegalArgumentException: requirement failed: inter.broker.listener.name must be a listener name defined in advertised.listeners. The valid options based on currently configured listeners are RED_INTERNA,RED_EXTERNA
 
