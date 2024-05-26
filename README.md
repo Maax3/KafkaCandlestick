@@ -25,7 +25,7 @@ Crear un consumidor (dentro del contenedor):
 
 * cd /bin
 ```sh
-  kafka-console-producer --bootstrap-server broker_2:9091 --topic mi_topico
+  kafka-console-consumer --bootstrap-server broker_3:9092 --topic mi_topico
 ```
 
 Crear un productor (dentro del contenedor): 
