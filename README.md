@@ -45,6 +45,7 @@ java.lang.IllegalArgumentException: requirement failed: inter.broker.listener.na
 [df](https://docs.confluent.io/platform/current/kafka/multi-node.html#cp-multi-node)
 https://docs.confluent.io/platform/current/installation/docker/config-reference.html#config-reference
 
+```yml
 ---
 version: '3'
 services:
@@ -59,9 +60,9 @@ services:
     environment:
       ZOOKEEPER_CLIENT_PORT: 2181
       ZOOKEEPER_TICK_TIME: 2000
-      ZOOKEEPER_DATA_DIR: /var/lib/zookeeper/data
-    volumes:
-      - ./zookeeper-data:/var/lib/zookeeper/data
+      #ZOOKEEPER_DATA_DIR: /var/lib/zookeeper/data
+    #volumes:
+     # - ./zookeeper-data:/var/lib/zookeeper/data
 
   broker_1:
     image: confluentinc/cp-kafka:latest
@@ -76,9 +77,12 @@ services:
     environment:
       KAFKA_BROKER_ID: 1
       KAFKA_ZOOKEEPER_CONNECT: 'zookeeper:2181'
+      KAFKA_INTER_BROKER_LISTENER_NAME: RED_INTERNA
       KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: RED_INTERNA:PLAINTEXT,RED_EXTERNA:PLAINTEXT #plaintext = sin cifrado
       KAFKA_ADVERTISED_LISTENERS: RED_INTERNA://broker_1:29090,RED_EXTERNA://localhost:9090
-      #KAFKA_DEFAULT_REPLICATION_FACTOR: 3
+      KAFKA_LISTENERS: RED_INTERNA://:29090, RED_EXTERNA://:9090 #ruta de escucha para Kafka
+      KAFKA_NUM_PARTITIONS: 2
+      KAFKA_DEFAULT_REPLICATION_FACTOR: 3
       KAFKA_MIN_INSYNC_REPLICAS: 2
       KAFKA_LOG_DIRS: /var/lib/kafka/data
     volumes:
@@ -97,9 +101,12 @@ services:
     environment:
       KAFKA_BROKER_ID: 2
       KAFKA_ZOOKEEPER_CONNECT: 'zookeeper:2181'
+      KAFKA_INTER_BROKER_LISTENER_NAME: RED_INTERNA
       KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: RED_INTERNA:PLAINTEXT,RED_EXTERNA:PLAINTEXT
       KAFKA_ADVERTISED_LISTENERS: RED_INTERNA://broker_2:29091,RED_EXTERNA://localhost:9091
-      #KAFKA_DEFAULT_REPLICATION_FACTOR: 3
+      KAFKA_LISTENERS: RED_INTERNA://:29091, RED_EXTERNA://:9091 #ruta de escucha para Kafka
+      KAFKA_NUM_PARTITIONS: 2
+      KAFKA_DEFAULT_REPLICATION_FACTOR: 3
       KAFKA_MIN_INSYNC_REPLICAS: 2
       KAFKA_LOG_DIRS: /var/lib/kafka/data
     volumes:
@@ -118,9 +125,12 @@ services:
     environment:
       KAFKA_BROKER_ID: 3
       KAFKA_ZOOKEEPER_CONNECT: 'zookeeper:2181'
+      KAFKA_INTER_BROKER_LISTENER_NAME: RED_INTERNA
       KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: RED_INTERNA:PLAINTEXT,RED_EXTERNA:PLAINTEXT
-      KAFKA_ADVERTISED_LISTENERS: RED_INTERNA://broker_3:29092,RED_EXTERNA://localhost:9092
-      #KAFKA_DEFAULT_REPLICATION_FACTOR: 3
+      KAFKA_ADVERTISED_LISTENERS: RED_INTERNA://broker_3:29092,RED_EXTERNA://localhost:9092 #ruta para clientes
+      KAFKA_LISTENERS: RED_INTERNA://:29092, RED_EXTERNA://:9092 #ruta de escucha para Kafka
+      KAFKA_NUM_PARTITIONS: 2
+      KAFKA_DEFAULT_REPLICATION_FACTOR: 3
       KAFKA_MIN_INSYNC_REPLICAS: 2
       KAFKA_LOG_DIRS: /var/lib/kafka/data
     volumes:
@@ -129,4 +139,6 @@ services:
 networks:
   kafka_net:
     name: network_kafka_conexion
+  
+```
   
