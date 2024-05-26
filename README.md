@@ -6,3 +6,10 @@
 * [SETUP KAFKA SENCILLO EN DOCKER (ES)](https://www.youtube.com/watch?v=rhUuD0eA-EQ&ab_channel=DebuggeandoIdeas)
 * [BASES KAFKA y EJEMPLOS REALES (EN)](https://www.youtube.com/watch?v=wmuuOYDaaBw&list=PLCh59G4US86oC5GnhYrSrKZKDoQbfzZLW&ab_channel=Upstash)
 * [BASES DE KAFKA (RU)](https://www.youtube.com/watch?v=-AZOi3kP9Js)
+
+# Apis
+* cryptoCompare
+* CoinMarketCap
+* CoinGecko
+* Bitfinex
+* https://github.com/Crypto-toolbox/btfxwss
