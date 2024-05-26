@@ -23,15 +23,16 @@ Crear un topico
 
 Crear un consumidor (dentro del contenedor):
 
-Crear un productor (dentro del contenedor):
+Crear un productor (dentro del contenedor): 
+* cd /bin
 ```sh
-  cd /bin
-  kafka-console-producer --bootstrap-server broker_3:9092 --topic nuevo_topic
+  kafka-console-producer --bootstrap-server broker_1:9090 --topic mi_topico
 ```
 
 Para verificar que el tópico tiene las configuraciones correctas:
+* cd /bin
 ```sh
-  kafka-topics.sh --describe --zookeeper zookeeper:2181 --topic mi_topico
+  kafka-topics --describe --zookeeper zookeeper:2181 --topic mi_topico
 ```
 
 ## Variables de entorno
