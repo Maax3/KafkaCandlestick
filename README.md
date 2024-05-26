@@ -6,6 +6,9 @@
 * [SETUP KAFKA SENCILLO EN DOCKER (ES)](https://www.youtube.com/watch?v=rhUuD0eA-EQ&ab_channel=DebuggeandoIdeas)
 * [BASES KAFKA y EJEMPLOS REALES (EN)](https://www.youtube.com/watch?v=wmuuOYDaaBw&list=PLCh59G4US86oC5GnhYrSrKZKDoQbfzZLW&ab_channel=Upstash)
 * [BASES DE KAFKA (RU)](https://www.youtube.com/watch?v=-AZOi3kP9Js)
+* [LISTA DE VARIABLES KAFKA](https://docs.confluent.io/platform/current/installation/configuration/broker-configs.html?#)
+* [DOCUMENTACION DE CONEXION CON DOCKER](https://docs.confluent.io/platform/current/kafka/multi-node.html#cp-multi-node)
+* [COMO SE ESCRIBEN LAS VARIABLES DE KAFKA EN DOCKER](https://docs.confluent.io/platform/current/installation/docker/config-reference.html#config-reference)
 
 # Apis
 * cryptoCompare
@@ -15,6 +18,8 @@
 * https://github.com/Crypto-toolbox/btfxwss
 
 # Configuración
+
+![](https://gyazo.com/fb8865ae0496892e4bf596fd77d54d7c)
 
 Para verificar que el tópico tiene las configuraciones correctas:
 ```sh
