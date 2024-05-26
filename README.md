@@ -14,6 +14,13 @@
 * Bitfinex
 * https://github.com/Crypto-toolbox/btfxwss
 
+# Configuración
+
+Para verificar que el tópico tiene las configuraciones correctas:
+```sh
+  kafka-topics.sh --describe --zookeeper zookeeper:2181 --topic mi_topico
+```
+
 # Tests
 [df](https://docs.confluent.io/platform/current/kafka/multi-node.html#cp-multi-node)
 https://docs.confluent.io/platform/current/installation/docker/config-reference.html#config-reference
