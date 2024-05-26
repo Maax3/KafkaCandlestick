@@ -22,6 +22,8 @@ Para verificar que el tópico tiene las configuraciones correctas:
 ```
 
 # Tests
+java.lang.IllegalArgumentException: requirement failed: inter.broker.listener.name must be a listener name defined in advertised.listeners. The valid options based on currently configured listeners are RED_INTERNA,RED_EXTERNA
+
 [df](https://docs.confluent.io/platform/current/kafka/multi-node.html#cp-multi-node)
 https://docs.confluent.io/platform/current/installation/docker/config-reference.html#config-reference
 
