@@ -1,2 +1,2 @@
-# Apuntes-Kafka
-Recopilación de notas sobre Kafka
+# Enlaces
+* [BASES DE KAFKA (RU)](https://www.youtube.com/watch?v=-AZOi3kP9Js)
