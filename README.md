@@ -20,7 +20,9 @@ Para verificar que el tópico tiene las configuraciones correctas:
 ```sh
   kafka-topics.sh --describe --zookeeper zookeeper:2181 --topic mi_topico
 ```
+## Variables de entorno
 
+#### KAFKA_LISTENERS - KAFKA_ADVERTISED_LISTENERS
 ``KAFKA_LISTENERS`` especifica dónde Kafka debe escuchar las conexiones entrantes, mientras que ``KAFKA_ADVERTISED_LISTENERS`` especifica qué endpoints deben ser anunciados a los clientes para que puedan establecer conexiones. La diferencia clave es que ``KAFKA_ADVERTISED_LISTENERS`` se utiliza para la comunicación externa con los clientes, mientras que ``KAFKA_LISTENERS`` se utiliza para la comunicación interna entre los componentes de Kafka.
 
 # Tests
