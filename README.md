@@ -145,6 +145,37 @@ networks:
   
 ```
 
+```sh
+from pyspark.sql import SparkSession
+
+# Configurar la sesión de Spark
+spark = SparkSession \
+    .builder \
+    .appName("KafkaToDatabricks") \
+    .getOrCreate()
+
+# Configurar los parámetros de Kafka
+kafka_bootstrap_servers = "<tu_ip_publica>:9092"
+kafka_topic = "tu_topic"
+
+# Leer datos de Kafka
+df = spark \
+    .readStream \
+    .format("kafka") \
+    .option("kafka.bootstrap.servers", kafka_bootstrap_servers) \
+    .option("subscribe", kafka_topic) \
+    .load()
+
+# Mostrar los datos leídos de Kafka
+df.selectExpr("CAST(key AS STRING)", "CAST(value AS STRING)") \
+  .writeStream \
+  .format("console") \
+  .start() \
+  .awaitTermination()
+
+
+```
+
 # Sin ordenar
 
 Existen conectores específicos de Kafka para InfluxDB, como Kafka Connect, que permiten la ingesta continua de datos desde tópicos de Kafka hacia InfluxDB sin necesidad de escribir código personalizado.
