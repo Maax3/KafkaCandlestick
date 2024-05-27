@@ -147,10 +147,11 @@ networks:
 
 ```sh
 from pyspark.sql import SparkSession
+from pyspark.sql.functions import col, from_json, to_json, struct
+from pyspark.sql.types import StringType, StructType, StructField
 
-# Configurar la sesión de Spark
-spark = SparkSession \
-    .builder \
+# Crear la sesión de Spark
+spark = SparkSession.builder \
     .appName("KafkaToDatabricks") \
     .getOrCreate()
 
@@ -158,20 +159,31 @@ spark = SparkSession \
 kafka_bootstrap_servers = "<tu_ip_publica>:9092"
 kafka_topic = "tu_topic"
 
+# Definir el esquema del mensaje de Kafka
+schema = StructType([
+    StructField("key", StringType()),
+    StructField("value", StringType())
+])
+
 # Leer datos de Kafka
-df = spark \
-    .readStream \
+df = spark.readStream \
     .format("kafka") \
     .option("kafka.bootstrap.servers", kafka_bootstrap_servers) \
     .option("subscribe", kafka_topic) \
     .load()
 
-# Mostrar los datos leídos de Kafka
-df.selectExpr("CAST(key AS STRING)", "CAST(value AS STRING)") \
-  .writeStream \
-  .format("console") \
-  .start() \
-  .awaitTermination()
+# Convertir los datos de Kafka de formato binario a string
+kafka_df = df.selectExpr("CAST(key AS STRING)", "CAST(value AS STRING)")
+
+# Definir una consulta simple para visualizar los datos en la consola
+query = kafka_df \
+    .writeStream \
+    .outputMode("append") \
+    .format("console") \
+    .start()
+
+# Esperar la terminación de la consulta
+query.awaitTermination()
 
 
 ```
