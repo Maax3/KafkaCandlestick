@@ -46,10 +46,6 @@ Para verificar que el tópico tiene las configuraciones correctas:
 ``KAFKA_LISTENERS`` especifica dónde Kafka debe escuchar las conexiones entrantes, mientras que ``KAFKA_ADVERTISED_LISTENERS`` especifica qué endpoints deben ser anunciados a los clientes para que puedan establecer conexiones. La diferencia clave es que ``KAFKA_ADVERTISED_LISTENERS`` se utiliza para la comunicación externa con los clientes, mientras que ``KAFKA_LISTENERS`` se utiliza para la comunicación interna entre los componentes de Kafka.
 
 # Tests
-java.lang.IllegalArgumentException: requirement failed: inter.broker.listener.name must be a listener name defined in advertised.listeners. The valid options based on currently configured listeners are RED_INTERNA,RED_EXTERNA
-
-[df](https://docs.confluent.io/platform/current/kafka/multi-node.html#cp-multi-node)
-https://docs.confluent.io/platform/current/installation/docker/config-reference.html#config-reference
 
 ```yml
 ---
@@ -150,16 +146,12 @@ networks:
 
 # Sin ordenar
 
-https://sacavix.com/2022/02/iniciando-kafka-con-docker/
-
-KAFKA RU: https://www.youtube.com/watch?v=-AZOi3kP9Js
-
 Existen conectores específicos de Kafka para InfluxDB, como Kafka Connect, que permiten la ingesta continua de datos desde tópicos de Kafka hacia InfluxDB sin necesidad de escribir código personalizado.
 
-- Cada particion puede ser interpretada como una unidad independiente de streaming de mensajes. Tanto productores como consumidores pueden escribir y leer datos de forma concurrente
-- Los offsets son únicos respecto a la partición. Es decir, si existen 2 particiones en un topico puede haber mensajes con un offset de mismo valor.
-- Los mensajes se insertan de forma secuencial en una partición garantizando un orden conforme al valor del offset
-- Una vez asignado el offset, este se vuelve inmutable
+- Cada particion puede ser interpretada como una unidad independiente de streaming de mensajes. Tanto productores como consumidores pueden escribir y leer datos de forma concurrente.
+- Los offsets son únicos respecto a la partición. Es decir, si existen 2 particiones en un topico puede haber mensajes con un offset con el mismo valor.
+- Los mensajes se insertan de forma secuencial en una partición garantizando un orden conforme al valor del offset.
+- Una vez asignado el offset, este se vuelve inmutable.
 
 - Un grupo de consumidores es un grupo que funciona en conjunto para procesar los mensajes de una o varias particiones de un topico determinado. Cada particion en el topico
 puede ser asignada a un solo consumidor. TLDR: los consumidores de un mismo grupo de consumidores no pueden pisarse entre ellos, pero si si se trata de un grupo diferente de consumidores. El grupo de consumidores se establece con "group.id"
@@ -174,27 +166,22 @@ Kafka tiene 3 patrones de consumo:
  - At-Least-Once: Garantiza que cada mensaje se envie al consumidor y que se procese al menos una vez, pero puede provocar duplicados. 
 
 Hay dos valores principales que se pueden usar para auto_offset_reset:
+ - earliest: Esto significa que el consumidor comenzará a leer desde el offset más temprano disponible para el topic al que está suscrito. En otras palabras, si no hay un offset inicial disponible (porque es la primera vez que el consumidor se une al grupo o porque el offset inicial se ha perdido), el consumidor comenzará a leer desde el principio del registro de transacciones (commit log) del topic.
+ - latest: Esto significa que el consumidor comenzará a leer desde el offset más reciente disponible para el topic al que está suscrito. Si no hay un offset inicial disponible, el consumidor comenzará a leer desde el final del registro de transacciones del topic.
 
-earliest: Esto significa que el consumidor comenzará a leer desde el offset más temprano disponible para el topic al que está suscrito. En otras palabras, si no hay un offset inicial disponible (porque es la primera vez que el consumidor se une al grupo o porque el offset inicial se ha perdido), el consumidor comenzará a leer desde el principio del registro de transacciones (commit log) del topic.
-
-latest: Esto significa que el consumidor comenzará a leer desde el offset más reciente disponible para el topic al que está suscrito. Si no hay un offset inicial disponible, el consumidor comenzará a leer desde el final del registro de transacciones del topic.
-
-- Las replicas líder son las que tienen la carga de trabajo, si existe un rendimiento pobre hay que comprobar que los líderes esten correctamente distribuidos entre los brokers.
+Las replicas líder son las que tienen la carga de trabajo, si existe un rendimiento pobre hay que comprobar que los líderes esten correctamente distribuidos entre los brokers.
 
 - El broker controlador o kafka controller se encarga de designar los líderes de cada particion-replica. Las operaciones de lectura y escritura solo se producen en el líder, las replicas adicionales no aumentan la capacidad de procesamiento de datos.
 
-Las replicas denominadas "seguidores" mandan peticiones a la replica líder de forma periodica para hacer el backup de los datos. Al hacerse de forma periodica y asincrona, puede existir un caso donde no todas las réplicas tengan los datos completos del líder en el momento de que este 'caiga' o 'muera'. 
+Las replicas denominadas "seguidores" mandan peticiones a la partición líder de forma periodica para hacer el backup de los datos. Al hacerse de forma periodica y asincrona, puede existir un caso donde no todas las réplicas tengan los datos completos del líder en el momento de que este 'caiga' o 'muera'. Para solucionar esto existe el follower "ISR", que en esencia, es un parametro dentro de kafka llamado "min.insync.replicas" que permite cambiar el modo de escritura de asincrono a sincrono. De modo que, al mismo tiempo que se escriben los datos en el líder, se escriben en las réplicas ISR asignadas. 
 
-Para solucionar esto existe el follower "ISR", que en esencia, es un parametro dentro de kafka llamado "min.insync.replicas" que permite cambiar el modo de escritura de asincrono a sincrono. De modo que, al mismo tiempo que se escriben los datos en el líder, se escriben en las réplicas ISR asignadas. 
-
-Por ejemplo, si ponemos min.insync.replicas = 3, los datos se escribirán de forma sincrona en la particion líder y en 2 de sus réplicas "seguidoras".
-
-El numero minimo de replicas sincronas debe ser igual o menor al numero de replicas que tengas sin contar el lider. En caso contrario, podria haber conflicto de escritura y en el almacenamiento de datos.
+- Por ejemplo, si ponemos min.insync.replicas = 3, los datos se escribirán de forma sincrona en la particion líder y en 2 de sus réplicas "seguidoras".
+- El numero minimo de replicas sincronas debe ser igual o menor al numero de replicas que tengas sin contar el lider. En caso contrario, podria haber conflicto de escritura y en el almacenamiento de datos.
 
 Además de establecer el min.insync también hay que configurar el envio de mensajes que hace el productor, en este caso, habria que establecer el parámetro acks a "all". Acks tiene 3 variantes:
- - 0 = Sin comprobación de que el mensaje se ha escrito correctamente
- - 1 = El mensaje ha llegado con éxtio al líder
- - all = Se ha completo con éxito en todas las replicas ISR + líder
+ - 0 = Sin comprobación de que el mensaje se ha escrito correctamente.
+ - 1 = El mensaje ha llegado con éxtio al líder.
+ - all = Se ha completo con éxito en todas las replicas ISR + líder.
 
 A la hora de definir la particion en el Productor:
  - Puedes especificar que sea "Round-Robin" para que los mensajes se repartan entre las particiones existentes
