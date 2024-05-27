@@ -9,6 +9,7 @@
 * [LISTA DE VARIABLES KAFKA](https://docs.confluent.io/platform/current/installation/configuration/broker-configs.html?#)
 * [DOCUMENTACION DE CONEXION CON DOCKER](https://docs.confluent.io/platform/current/kafka/multi-node.html#cp-multi-node)
 * [COMO SE ESCRIBEN LAS VARIABLES DE KAFKA EN DOCKER](https://docs.confluent.io/platform/current/installation/docker/config-reference.html#config-reference)
+* [Conexion con Azure Databricks](https://www.youtube.com/watch?v=Sa3ubGXvT44&ab_channel=NextGenLearning)
 
 # Apis
 * cryptoCompare
