@@ -20,7 +20,11 @@
 
 # Configuración
 
-Crear un topico
+Ver tu IP pública
+
+```sh
+curl ifconfig.me
+```
 
 Crear un consumidor (dentro del contenedor):
 
