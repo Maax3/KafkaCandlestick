@@ -30,13 +30,13 @@ Crear un consumidor (dentro del contenedor):
 
 * cd /bin
 ```sh
-  kafka-console-consumer --bootstrap-server broker_3:9092 --topic mi_topico
+  kafka-console-consumer --bootstrap-server broker_3:29092 --topic mi_topico
 ```
 
 Crear un productor (dentro del contenedor): 
 * cd /bin
 ```sh
-  kafka-console-producer --bootstrap-server broker_1:9090 --topic mi_topico
+  kafka-console-producer --bootstrap-server broker_1:29090 --topic mi_topico
 ```
 
 Para verificar que el tópico tiene las configuraciones correctas:
