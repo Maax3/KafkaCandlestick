@@ -240,10 +240,10 @@ A la hora de definir la particion en el Productor:
  - Puedes especificar una particion de forma explicita, por ej "Productor 1 que envie al topic A - particion 0"
  - Por key-hash. Se utiliza para distribuir los mensajes de forma equitativa entre las diferentes particiones y al mismo tiempo garantiza que todos los mensajes con la misma clave sean enviados a la misma partición. Ejemplo:
 
-producer.produce('transacciones', key='usuario1', value='Compra por $100', callback=delivery_report)
-producer.produce('transacciones', key='usuario2', value='Compra por $50', callback=delivery_report)
-producer.produce('transacciones', key='usuario1', value='Devolución por $20', callback=delivery_report)
-producer.produce('transacciones', key='usuario3', value='Compra por $200', callback=delivery_report)
+* producer.produce('transacciones', key='usuario1', value='Compra por $100', callback=delivery_report)
+* producer.produce('transacciones', key='usuario2', value='Compra por $50', callback=delivery_report)
+* producer.produce('transacciones', key='usuario1', value='Devolución por $20', callback=delivery_report)
+* producer.produce('transacciones', key='usuario3', value='Compra por $200', callback=delivery_report)
 
 Si tenemos 3 particiones; Kafka podría distribuirlos tal que así:
  - Particion 0 (usuario1 y sus 2 mensajes)
