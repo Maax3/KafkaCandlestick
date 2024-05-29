@@ -11,6 +11,10 @@
 * [COMO SE ESCRIBEN LAS VARIABLES DE KAFKA EN DOCKER](https://docs.confluent.io/platform/current/installation/docker/config-reference.html#config-reference)
 * [Conexion con Azure Databricks](https://www.youtube.com/watch?v=Sa3ubGXvT44&ab_channel=NextGenLearning)
 
+# Configuración de conexión
+* [PART1](https://rmoff.net/2018/08/02/kafka-listeners-explained/)
+* [PART2](https://www.confluent.io/blog/kafka-client-cannot-connect-to-broker-on-aws-on-docker-etc/?utm_source=github&utm_medium=rmoff&utm_campaign=ty.community.con.rmoff-listeners&utm_term=rmoff-devx)
+
 # Apis
 * cryptoCompare
 * CoinMarketCap
