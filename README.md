@@ -10,6 +10,7 @@
 * [DOCUMENTACION DE CONEXION CON DOCKER](https://docs.confluent.io/platform/current/kafka/multi-node.html#cp-multi-node)
 * [COMO SE ESCRIBEN LAS VARIABLES DE KAFKA EN DOCKER](https://docs.confluent.io/platform/current/installation/docker/config-reference.html#config-reference)
 * [Conexion con Azure Databricks](https://www.youtube.com/watch?v=Sa3ubGXvT44&ab_channel=NextGenLearning)
+* [Información sobre Kafka SQL o KSQL y sus diferencias con Kafka Stream API](https://es.slideshare.net/KaiWaehner/kafka-streams-vs-ksql-for-stream-processing-on-top-of-apache-kafka-142127337)
 
 # Configuración de conexión
 * [PART1](https://rmoff.net/2018/08/02/kafka-listeners-explained/)
