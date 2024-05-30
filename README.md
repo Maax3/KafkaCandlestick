@@ -84,21 +84,30 @@ services:
       - zookeeper
     ports:
       - "9090:9090"
+      - "19090:19090"
+      - "29090:29090"
     networks:
       - kafka_net
     environment:
       KAFKA_BROKER_ID: 1
       KAFKA_ZOOKEEPER_CONNECT: 'zookeeper:2181'
       KAFKA_INTER_BROKER_LISTENER_NAME: RED_INTERNA
-      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: RED_INTERNA:PLAINTEXT,RED_EXTERNA:PLAINTEXT #plaintext = sin cifrado
-      KAFKA_ADVERTISED_LISTENERS: RED_INTERNA://broker_1:29090,RED_EXTERNA://localhost:9090
-      KAFKA_LISTENERS: RED_INTERNA://:29090, RED_EXTERNA://:9090 #ruta de escucha para Kafka
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: RED_INTERNA:PLAINTEXT,RED_EXTERNA:PLAINTEXT,RED_LOCAL:PLAINTEXT #plaintext = sin cifrado
+      KAFKA_ADVERTISED_LISTENERS: 
+        RED_EXTERNA://adb-3223500186722566.6.azuredatabricks.net:9090,
+        RED_INTERNA://broker_1:29090,
+        RED_LOCAL://localhost:19090
+      KAFKA_LISTENERS: 
+        RED_EXTERNA://:9090, 
+        RED_INTERNA://broker_1:29090, 
+        RED_LOCAL://broker_1:19090
       KAFKA_NUM_PARTITIONS: 2
       KAFKA_DEFAULT_REPLICATION_FACTOR: 3
       KAFKA_MIN_INSYNC_REPLICAS: 2
       KAFKA_LOG_DIRS: /var/lib/kafka/data
     volumes:
       - ./logs/kafka-logs-broker1:/var/lib/kafka/data
+      - ./server-logs/kafka-broker1:/var/log/kafka
 
   broker_2:
     image: confluentinc/cp-kafka:latest
@@ -108,21 +117,30 @@ services:
       - zookeeper
     ports:
       - "9091:9091"
+      - "29091:29091"
+      - "19091:19091"
     networks:
       - kafka_net
     environment:
       KAFKA_BROKER_ID: 2
       KAFKA_ZOOKEEPER_CONNECT: 'zookeeper:2181'
       KAFKA_INTER_BROKER_LISTENER_NAME: RED_INTERNA
-      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: RED_INTERNA:PLAINTEXT,RED_EXTERNA:PLAINTEXT
-      KAFKA_ADVERTISED_LISTENERS: RED_INTERNA://broker_2:29091,RED_EXTERNA://localhost:9091
-      KAFKA_LISTENERS: RED_INTERNA://:29091, RED_EXTERNA://:9091 #ruta de escucha para Kafka
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: RED_INTERNA:PLAINTEXT,RED_EXTERNA:PLAINTEXT,RED_LOCAL:PLAINTEXT
+      KAFKA_ADVERTISED_LISTENERS: 
+        RED_EXTERNA://adb-3223500186722566.6.azuredatabricks.net:9091,
+        RED_INTERNA://broker_2:29091,
+        RED_LOCAL://localhost:19091
+      KAFKA_LISTENERS: 
+        RED_EXTERNA://:9091, 
+        RED_INTERNA://broker_2:29091, 
+        RED_LOCAL://broker_2:19091
       KAFKA_NUM_PARTITIONS: 2
       KAFKA_DEFAULT_REPLICATION_FACTOR: 3
       KAFKA_MIN_INSYNC_REPLICAS: 2
       KAFKA_LOG_DIRS: /var/lib/kafka/data
     volumes:
       - ./logs/kafka-logs-broker2:/var/lib/kafka/data
+      - ./server-logs/kafka-broker2:/var/log/kafka
 
   broker_3:
     image: confluentinc/cp-kafka:latest
@@ -132,25 +150,116 @@ services:
       - zookeeper
     ports:
       - "9092:9092"
+      - "19092:19092"
+      - "29092:29092"
     networks:
       - kafka_net
     environment:
       KAFKA_BROKER_ID: 3
       KAFKA_ZOOKEEPER_CONNECT: 'zookeeper:2181'
       KAFKA_INTER_BROKER_LISTENER_NAME: RED_INTERNA
-      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: RED_INTERNA:PLAINTEXT,RED_EXTERNA:PLAINTEXT
-      KAFKA_ADVERTISED_LISTENERS: RED_INTERNA://broker_3:29092,RED_EXTERNA://localhost:9092 #ruta para clientes
-      KAFKA_LISTENERS: RED_INTERNA://:29092, RED_EXTERNA://:9092 #ruta de escucha para Kafka
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: RED_INTERNA:PLAINTEXT,RED_EXTERNA:PLAINTEXT,RED_LOCAL:PLAINTEXT
+      KAFKA_ADVERTISED_LISTENERS: 
+        RED_EXTERNA://195.235.176.225:9092,
+        RED_INTERNA://broker_3:29092,
+        RED_LOCAL://localhost:19092
+      KAFKA_LISTENERS: 
+        RED_EXTERNA://:9092, 
+        RED_INTERNA://broker_3:29092, 
+        RED_LOCAL://broker_3:19092
       KAFKA_NUM_PARTITIONS: 2
       KAFKA_DEFAULT_REPLICATION_FACTOR: 3
       KAFKA_MIN_INSYNC_REPLICAS: 2
       KAFKA_LOG_DIRS: /var/lib/kafka/data
     volumes:
       - ./logs/kafka-logs-broker3:/var/lib/kafka/data
+      - ./server-logs/kafka-broker3:/var/log/kafka
+
+  kafka-ui:
+    image: provectuslabs/kafka-ui:latest
+    hostname: kafka-ui
+    container_name: kafka-ui
+    ports:
+      - "8080:8080"
+    networks:
+      - kafka_net
+    depends_on:
+      - broker_1
+      - broker_2
+      - broker_3
+      - zookeeper
+    environment:
+      KAFKA_CLUSTERS_0_NAME: local
+      KAFKA_CLUSTERS_0_BOOTSTRAPSERVERS: broker_1:29090,broker_2:29091,broker_3:29092
+      KAFKA_CLUSTERS_0_ZOOKEEPER: zookeeper:2181
+
+  kafka-connect:
+    image: confluentinc/cp-kafka-connect:latest
+    hostname: kafka-connect
+    container_name: kafka-connect
+    depends_on:
+      - zookeeper
+      - broker_1
+      - broker_2
+      - broker_3
+      - schema-registry
+    ports:
+      - "8083:8083"
+    environment:
+      CONNECT_BOOTSTRAP_SERVERS: broker_1:29090, broker_2:29091, broker_3:29092
+      CONNECT_REST_PORT: 8083
+      CONNECT_REST_ADVERTISED_HOST_NAME: kafka-connect
+      CONNECT_GROUP_ID: compose-connect-group
+      CONNECT_VALUE_CONVERTER_SCHEMA_REGISTRY_URL: "http://schema-registry:8081"
+      CONNECT_CONFIG_STORAGE_TOPIC: docker-connect-configs
+      CONNECT_OFFSET_STORAGE_TOPIC: docker-connect-offsets
+      CONNECT_STATUS_STORAGE_TOPIC: docker-connect-status
+      CONNECT_KEY_CONVERTER: org.apache.kafka.connect.storage.StringConverter
+      CONNECT_VALUE_CONVERTER: io.confluent.connect.avro.AvroConverter
+      CONNECT_INTERNAL_KEY_CONVERTER: org.apache.kafka.connect.json.JsonConverter
+      CONNECT_INTERNAL_VALUE_CONVERTER: org.apache.kafka.connect.json.JsonConverter
+      CONNECT_CONFIG_STORAGE_REPLICATION_FACTOR: 1
+      CONNECT_OFFSET_STORAGE_REPLICATION_FACTOR: 1
+      CONNECT_STATUS_STORAGE_REPLICATION_FACTOR: 1
+      CONNECT_LOG4J_LOGGERS: org.apache.zookeeper=ERROR,org.I0Itec.zkclient=ERROR,org.reflections=ERROR
+      CONNECT_PLUGIN_PATH: "/usr/share/java,/usr/share/confluent-hub-components"
+    command:
+    - bash
+    - -c
+    - |
+      echo "Instalacion de plugins"
+      confluent-hub install --no-prompt confluentinc/kafka-connect-azure-data-lake-gen2-storage:latest
+      /etc/confluent/docker/run &
+      sleep infinity
+    volumes:
+    - ./config/azure-datalake-gen2.properties:/etc/kafka/connect.properties
+
+
+  schema-registry:
+    image: confluentinc/cp-schema-registry:latest
+    hostname: schema-registry
+    container_name: schema-registry
+    depends_on:
+      - zookeeper
+      - broker_1
+      - broker_2
+      - broker_3
+    ports:
+      - "8081:8081"
+    environment:
+      SCHEMA_REGISTRY_HOST_NAME: schema-registry
+      SCHEMA_REGISTRY_KAFKA_BOOTSTRAP_SERVERS: broker_1:29090, broker_2:29091, broker_3:29092
+      SCHEMA_REGISTRY_LISTENERS: http://0.0.0.0:8081
+      SCHEMA_REGISTRY_KAFKASTORE_CONNECTION_URL: http://schema-registry:8081
+
 
 networks:
   kafka_net:
     name: network_kafka_conexion
+  
+
+
+
   
 ```
 
