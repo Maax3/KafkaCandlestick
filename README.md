@@ -362,9 +362,9 @@ Si tenemos 3 particiones; Kafka podría distribuirlos tal que así:
 
 
 
-3212-6739-47/Dmitry
-L@12345678zK
-7J5UksfHfDP3Az
+* 3212-6739-47/Dmitry
+* L@12345678zK
+* 7J5UksfHfDP3z
 
 
 
