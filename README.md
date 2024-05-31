@@ -361,6 +361,13 @@ Si tenemos 3 particiones; Kafka podría distribuirlos tal que así:
  - Particion 2 (usuario3 y su mensaje)
 
 
+
+3212-6739-47/Dmitry
+L@12345678zK
+7J5UksfHfDP3Az
+
+
+
 ::::::::::OPTIMIZACION:::::::::
 
 Zero-Copy en Kafka es una técnica de optimización que permite transferir datos entre productores y consumidores sin copiarlos de un búfer de memoria a otro, lo que mejora significativamente el rendimiento del sistema.
