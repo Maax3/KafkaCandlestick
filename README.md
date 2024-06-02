@@ -160,7 +160,7 @@ services:
       KAFKA_INTER_BROKER_LISTENER_NAME: RED_INTERNA
       KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: RED_INTERNA:PLAINTEXT,RED_EXTERNA:PLAINTEXT,RED_LOCAL:PLAINTEXT
       KAFKA_ADVERTISED_LISTENERS: 
-        RED_EXTERNA://195.235.176.225:9092,
+
         RED_INTERNA://broker_3:29092,
         RED_LOCAL://localhost:19092
       KAFKA_LISTENERS: 
@@ -193,116 +193,10 @@ services:
       KAFKA_CLUSTERS_0_BOOTSTRAPSERVERS: broker_1:29090,broker_2:29091,broker_3:29092
       KAFKA_CLUSTERS_0_ZOOKEEPER: zookeeper:2181
 
-  kafka-connect:
-    image: confluentinc/cp-kafka-connect:latest
-    hostname: kafka-connect
-    container_name: kafka-connect
-    depends_on:
-      - zookeeper
-      - broker_1
-      - broker_2
-      - broker_3
-      - schema-registry
-    ports:
-      - "8083:8083"
-    environment:
-      CONNECT_BOOTSTRAP_SERVERS: broker_1:29090, broker_2:29091, broker_3:29092
-      CONNECT_REST_PORT: 8083
-      CONNECT_REST_ADVERTISED_HOST_NAME: kafka-connect
-      CONNECT_GROUP_ID: compose-connect-group
-      CONNECT_VALUE_CONVERTER_SCHEMA_REGISTRY_URL: "http://schema-registry:8081"
-      CONNECT_CONFIG_STORAGE_TOPIC: docker-connect-configs
-      CONNECT_OFFSET_STORAGE_TOPIC: docker-connect-offsets
-      CONNECT_STATUS_STORAGE_TOPIC: docker-connect-status
-      CONNECT_KEY_CONVERTER: org.apache.kafka.connect.storage.StringConverter
-      CONNECT_VALUE_CONVERTER: io.confluent.connect.avro.AvroConverter
-      CONNECT_INTERNAL_KEY_CONVERTER: org.apache.kafka.connect.json.JsonConverter
-      CONNECT_INTERNAL_VALUE_CONVERTER: org.apache.kafka.connect.json.JsonConverter
-      CONNECT_CONFIG_STORAGE_REPLICATION_FACTOR: 1
-      CONNECT_OFFSET_STORAGE_REPLICATION_FACTOR: 1
-      CONNECT_STATUS_STORAGE_REPLICATION_FACTOR: 1
-      CONNECT_LOG4J_LOGGERS: org.apache.zookeeper=ERROR,org.I0Itec.zkclient=ERROR,org.reflections=ERROR
-      CONNECT_PLUGIN_PATH: "/usr/share/java,/usr/share/confluent-hub-components"
-    command:
-    - bash
-    - -c
-    - |
-      echo "Instalacion de plugins"
-      confluent-hub install --no-prompt confluentinc/kafka-connect-azure-data-lake-gen2-storage:latest
-      /etc/confluent/docker/run &
-      sleep infinity
-    volumes:
-    - ./config/azure-datalake-gen2.properties:/etc/kafka/connect.properties
-
-
-  schema-registry:
-    image: confluentinc/cp-schema-registry:latest
-    hostname: schema-registry
-    container_name: schema-registry
-    depends_on:
-      - zookeeper
-      - broker_1
-      - broker_2
-      - broker_3
-    ports:
-      - "8081:8081"
-    environment:
-      SCHEMA_REGISTRY_HOST_NAME: schema-registry
-      SCHEMA_REGISTRY_KAFKA_BOOTSTRAP_SERVERS: broker_1:29090, broker_2:29091, broker_3:29092
-      SCHEMA_REGISTRY_LISTENERS: http://0.0.0.0:8081
-      SCHEMA_REGISTRY_KAFKASTORE_CONNECTION_URL: http://schema-registry:8081
-
-
 networks:
   kafka_net:
     name: network_kafka_conexion
   
-
-
-
-  
-```
-
-```sh
-from pyspark.sql import SparkSession
-from pyspark.sql.functions import col, from_json, to_json, struct
-from pyspark.sql.types import StringType, StructType, StructField
-
-# Crear la sesión de Spark
-spark = SparkSession.builder \
-    .appName("KafkaToDatabricks") \
-    .getOrCreate()
-
-# Configurar los parámetros de Kafka
-kafka_bootstrap_servers = "<tu_ip_publica>:9092"
-kafka_topic = "tu_topic"
-
-# Definir el esquema del mensaje de Kafka
-schema = StructType([
-    StructField("key", StringType()),
-    StructField("value", StringType())
-])
-
-# Leer datos de Kafka
-df = spark.readStream \
-    .format("kafka") \
-    .option("kafka.bootstrap.servers", kafka_bootstrap_servers) \
-    .option("subscribe", kafka_topic) \
-    .load()
-
-# Convertir los datos de Kafka de formato binario a string
-kafka_df = df.selectExpr("CAST(key AS STRING)", "CAST(value AS STRING)")
-
-# Definir una consulta simple para visualizar los datos en la consola
-query = kafka_df \
-    .writeStream \
-    .outputMode("append") \
-    .format("console") \
-    .start()
-
-# Esperar la terminación de la consulta
-query.awaitTermination()
-
 
 ```
 
