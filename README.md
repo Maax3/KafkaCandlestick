@@ -306,21 +306,12 @@ query.awaitTermination()
 
 ```
 
-# Sin ordenar
+# Consumidores
 
 Existen conectores específicos de Kafka para InfluxDB, como Kafka Connect, que permiten la ingesta continua de datos desde tópicos de Kafka hacia InfluxDB sin necesidad de escribir código personalizado.
 
-- Cada particion puede ser interpretada como una unidad independiente de streaming de mensajes. Tanto productores como consumidores pueden escribir y leer datos de forma concurrente.
-- Los offsets son únicos respecto a la partición. Es decir, si existen 2 particiones en un topico puede haber mensajes con un offset con el mismo valor.
-- Los mensajes se insertan de forma secuencial en una partición garantizando un orden conforme al valor del offset.
-- Una vez asignado el offset, este se vuelve inmutable.
-
 - Un grupo de consumidores es un grupo que funciona en conjunto para procesar los mensajes de una o varias particiones de un topico determinado. Cada particion en el topico
 puede ser asignada a un solo consumidor. TLDR: los consumidores de un mismo grupo de consumidores no pueden pisarse entre ellos, pero si si se trata de un grupo diferente de consumidores. El grupo de consumidores se establece con "group.id"
-
--Líderes y Réplicas: En Kafka, cada partición tiene un líder y puede tener varias réplicas. El líder es el responsable de manejar todas las lecturas y escrituras de esa partición. Las réplicas actúan como copias de seguridad. Si un broker que actúa como líder falla, uno de los brokers que contiene una réplica puede asumir el rol de líder, garantizando la continuidad del servicio.
-
-Kafka intenta distribuir siempre las particiones de un tópico de manera equilibrada entre los brokers para balancear la carga. Así, un broker puede ser líder de varias particiones de diferentes tópicos o puedes tener múltiples brokers que son líderes de una sola partición dentro de un unico topico.
 
 Kafka tiene 3 patrones de consumo:
  - Exactly-Once: Garantiza que cada mensaje se procese exactamente una vez, eliminando los duplicados.
@@ -331,9 +322,18 @@ Hay dos valores principales que se pueden usar para auto_offset_reset:
  - earliest: Esto significa que el consumidor comenzará a leer desde el offset más temprano disponible para el topic al que está suscrito. En otras palabras, si no hay un offset inicial disponible (porque es la primera vez que el consumidor se une al grupo o porque el offset inicial se ha perdido), el consumidor comenzará a leer desde el principio del registro de transacciones (commit log) del topic.
  - latest: Esto significa que el consumidor comenzará a leer desde el offset más reciente disponible para el topic al que está suscrito. Si no hay un offset inicial disponible, el consumidor comenzará a leer desde el final del registro de transacciones del topic.
 
-Las replicas líder son las que tienen la carga de trabajo, si existe un rendimiento pobre hay que comprobar que los líderes esten correctamente distribuidos entre los brokers.
+# Productor y particiones
 
-- El broker controlador o kafka controller se encarga de designar los líderes de cada particion-replica. Las operaciones de lectura y escritura solo se producen en el líder, las replicas adicionales no aumentan la capacidad de procesamiento de datos.
+- Cada particion puede ser interpretada como una unidad independiente de streaming de mensajes. Tanto productores como consumidores pueden escribir y leer datos de forma concurrente.
+- Los offsets son únicos respecto a la partición. Es decir, si existen 2 particiones en un topico puede haber mensajes con un offset con el mismo valor.
+- Los mensajes se insertan de forma secuencial en una partición garantizando un orden conforme al valor del offset.
+- Una vez asignado el offset, este se vuelve inmutable.
+
+### Líderes y Réplicas 
+
+En Kafka, cada partición tiene un líder y puede tener varias réplicas. El líder es el responsable de manejar todas las lecturas y escrituras de esa partición. Las réplicas actúan como copias de seguridad. Si un broker que actúa como líder falla, uno de los brokers que contiene una réplica puede asumir el rol de líder, garantizando la continuidad del servicio. Las replicas líder son las que tienen la carga de trabajo, si existe un rendimiento pobre hay que comprobar que los líderes esten correctamente distribuidos entre los brokers.
+
+Kafka intenta distribuir siempre las particiones de un tópico de manera equilibrada entre los brokers para balancear la carga. Así, un broker puede ser líder de varias particiones de diferentes tópicos o puedes tener múltiples brokers que son líderes de una sola partición dentro de un unico topico.
 
 Las replicas denominadas "seguidores" mandan peticiones a la partición líder de forma periodica para hacer el backup de los datos. Al hacerse de forma periodica y asincrona, puede existir un caso donde no todas las réplicas tengan los datos completos del líder en el momento de que este 'caiga' o 'muera'. Para solucionar esto existe el follower "ISR", que en esencia, es un parametro dentro de kafka llamado "min.insync.replicas" que permite cambiar el modo de escritura de asincrono a sincrono. De modo que, al mismo tiempo que se escriben los datos en el líder, se escriben en las réplicas ISR asignadas. 
 
@@ -345,26 +345,26 @@ Además de establecer el min.insync también hay que configurar el envio de mens
  - 1 = El mensaje ha llegado con éxtio al líder.
  - all = Se ha completo con éxito en todas las replicas ISR + líder.
 
-A la hora de definir la particion en el Productor:
+## A la hora de definir la particion en el Productor:
  - Puedes especificar que sea "Round-Robin" para que los mensajes se repartan entre las particiones existentes
  - Puedes especificar una particion de forma explicita, por ej "Productor 1 que envie al topic A - particion 0"
  - Por key-hash. Se utiliza para distribuir los mensajes de forma equitativa entre las diferentes particiones y al mismo tiempo garantiza que todos los mensajes con la misma clave sean enviados a la misma partición. Ejemplo:
 
-* producer.produce('transacciones', key='usuario1', value='Compra por $100', callback=delivery_report)
-* producer.produce('transacciones', key='usuario2', value='Compra por $50', callback=delivery_report)
-* producer.produce('transacciones', key='usuario1', value='Devolución por $20', callback=delivery_report)
-* producer.produce('transacciones', key='usuario3', value='Compra por $200', callback=delivery_report)
+```python
+  producer.produce('transacciones', key='usuario1', value='Compra por $100', callback=delivery_report)
+  producer.produce('transacciones', key='usuario2', value='Compra por $50', callback=delivery_report)
+  producer.produce('transacciones', key='usuario1', value='Devolución por $20', callback=delivery_report)
+  producer.produce('transacciones', key='usuario3', value='Compra por $200', callback=delivery_report)
+```
 
 Si tenemos 3 particiones; Kafka podría distribuirlos tal que así:
  - Particion 0 (usuario1 y sus 2 mensajes)
  - Particion 1 (usuario2 y su mensaje)
  - Particion 2 (usuario3 y su mensaje)
 
+**Como funciona el key-hash internamente:**
 
-
-* 3212-6739-47/Dmitry
-* L@12345678zK
-* 7J5UksfHfDP3z
+Kafka toma la clave del mensaje, calcula su hash y luego aplica una operación de módulo con el número de particiones del topic (hash(key) % num_partitions). El resultado de esta operación es el índice de la partición a la que se enviará el mensaje
 
 
 
