@@ -1,0 +1,140 @@
+version: '3'
+services:
+  zookeeper:
+    image: confluentinc/cp-zookeeper:latest
+    hostname: zookeeper
+    container_name: zookeeper
+    ports:
+      - "2181:2181"
+    networks:
+      - kafka_net
+    environment:
+      ZOOKEEPER_CLIENT_PORT: 2181
+      ZOOKEEPER_TICK_TIME: 2000
+
+# ::::: KAFKA BROKER ::::::::::::
+  broker_1:
+    image: confluentinc/cp-kafka:latest
+    hostname: broker_1
+    container_name: broker_1
+    depends_on:
+      - zookeeper
+    ports:
+      - "9090:9090"
+      - "19090:19090"
+      - "29090:29090"
+    networks:
+      - kafka_net
+    environment:
+      KAFKA_BROKER_ID: 1
+      KAFKA_ZOOKEEPER_CONNECT: 'zookeeper:2181'
+      KAFKA_INTER_BROKER_LISTENER_NAME: RED_INTERNA
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: RED_INTERNA:PLAINTEXT,RED_EXTERNA:PLAINTEXT,RED_LOCAL:PLAINTEXT #plaintext = sin cifrado
+      KAFKA_ADVERTISED_LISTENERS: 
+        RED_EXTERNA://si_puedes_abrir_puertos_add_tu_consumidor_dns_here:9090,
+        RED_INTERNA://broker_1:29090,
+        RED_LOCAL://localhost:19090
+      KAFKA_LISTENERS: 
+        RED_EXTERNA://:9090, 
+        RED_INTERNA://broker_1:29090, 
+        RED_LOCAL://broker_1:19090
+      KAFKA_NUM_PARTITIONS: 2
+      KAFKA_DEFAULT_REPLICATION_FACTOR: 3
+      KAFKA_MIN_INSYNC_REPLICAS: 2
+      KAFKA_LOG_DIRS: /var/lib/kafka/data
+    volumes:
+      - ./logs/kafka-logs-broker1:/var/lib/kafka/data
+      - ./server-logs/kafka-broker1:/var/log/kafka
+
+# ::::: KAFKA BROKER 3 ::::::::::::
+  broker_2:
+    image: confluentinc/cp-kafka:latest
+    hostname: broker_2
+    container_name: broker_2
+    depends_on:
+      - zookeeper
+    ports:
+      - "9091:9091"
+      - "29091:29091"
+      - "19091:19091"
+    networks:
+      - kafka_net
+    environment:
+      KAFKA_BROKER_ID: 2
+      KAFKA_ZOOKEEPER_CONNECT: 'zookeeper:2181'
+      KAFKA_INTER_BROKER_LISTENER_NAME: RED_INTERNA
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: RED_INTERNA:PLAINTEXT,RED_EXTERNA:PLAINTEXT,RED_LOCAL:PLAINTEXT
+      KAFKA_ADVERTISED_LISTENERS: 
+        RED_EXTERNA://si_puedes_abrir_puertos_add_tu_consumidor_dns_here:9091,
+        RED_INTERNA://broker_2:29091,
+        RED_LOCAL://localhost:19091
+      KAFKA_LISTENERS: 
+        RED_EXTERNA://:9091, 
+        RED_INTERNA://broker_2:29091, 
+        RED_LOCAL://broker_2:19091
+      KAFKA_NUM_PARTITIONS: 2
+      KAFKA_DEFAULT_REPLICATION_FACTOR: 3
+      KAFKA_MIN_INSYNC_REPLICAS: 2
+      KAFKA_LOG_DIRS: /var/lib/kafka/data
+    volumes:
+      - ./logs/kafka-logs-broker2:/var/lib/kafka/data
+      - ./server-logs/kafka-broker2:/var/log/kafka
+
+# ::::: KAFKA BROKER 3 ::::::::::::
+  broker_3:
+    image: confluentinc/cp-kafka:latest
+    hostname: broker_3
+    container_name: broker_3
+    depends_on:
+      - zookeeper
+    ports:
+      - "9092:9092"
+      - "19092:19092"
+      - "29092:29092"
+    networks:
+      - kafka_net
+    environment:
+      KAFKA_BROKER_ID: 3
+      KAFKA_ZOOKEEPER_CONNECT: 'zookeeper:2181'
+      KAFKA_INTER_BROKER_LISTENER_NAME: RED_INTERNA
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: RED_INTERNA:PLAINTEXT,RED_EXTERNA:PLAINTEXT,RED_LOCAL:PLAINTEXT
+      KAFKA_ADVERTISED_LISTENERS: 
+        RED_EXTERNA://si_puedes_abrir_puertos_add_tu_consumidor_dns_here:9092,
+        RED_INTERNA://broker_3:29092,
+        RED_LOCAL://localhost:19092
+      KAFKA_LISTENERS: 
+        RED_EXTERNA://:9092, 
+        RED_INTERNA://broker_3:29092, 
+        RED_LOCAL://broker_3:19092
+      KAFKA_NUM_PARTITIONS: 2
+      KAFKA_DEFAULT_REPLICATION_FACTOR: 3
+      KAFKA_MIN_INSYNC_REPLICAS: 2
+      KAFKA_LOG_DIRS: /var/lib/kafka/data
+    volumes:
+      - ./logs/kafka-logs-broker3:/var/lib/kafka/data
+      - ./server-logs/kafka-broker3:/var/log/kafka
+
+# ::::: VISUALIZADOR DE KAFKA ::::::::::::
+  kafka-ui:
+    image: provectuslabs/kafka-ui:latest
+    hostname: kafka-ui
+    container_name: kafka-ui
+    ports:
+      - "8080:8080"
+    networks:
+      - kafka_net
+    depends_on:
+      - broker_1
+      - broker_2
+      - broker_3
+    environment:
+      KAFKA_CLUSTERS_0_NAME: cluster_view
+      KAFKA_CLUSTERS_0_BOOTSTRAPSERVERS: broker_1:29090,broker_2:29091,broker_3:29092
+      KAFKA_CLUSTERS_0_ZOOKEEPER: zookeeper:2181
+
+# ::::: ESQUEMA DE KAFKA PARA AVRO ::::::::::::
+
+networks:
+  kafka_net:
+    name: network_kafka_conexion
+  

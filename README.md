@@ -1,3 +1,10 @@
+# Entorno
+  ```python
+  python -m venv kafka
+  source venv/bin/activate
+  pip list
+  ```
+
 # Enlaces
 * [EJEMPLO DE KAFKA (NullSafe (ES))](https://www.youtube.com/watch?v=MA-nxL14fr4&ab_channel=NullSafeArchitect)
 * [KAFKA CONECTORES (NullSafe (ES))](https://www.youtube.com/watch?v=texXOyt-bPE&ab_channel=NullSafeArchitect)
