@@ -19,9 +19,10 @@ def fetch_schema(schema_registry_url):
     return schema_json['schema']
 
 parsed_schema = fetch_schema(SCHEMA_REGISTRY_URL)
-
+dir_actual = os.path.dirname(__file__)
+print(dir_actual)
 #Guardamos el esquema AVRO en un fichero.avsc
-with open("esquema_avro.avsc", "w") as file:
+with open(f'{dir_actual}/esquema_avro.avsc', "w") as file:
     print('Fichero del esquema creado!')
     file.write(parsed_schema)
 

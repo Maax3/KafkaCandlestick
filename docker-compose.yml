@@ -141,9 +141,6 @@ services:
       SCHEMA_REGISTRY_HOST_NAME: schema-registry
       SCHEMA_REGISTRY_LISTENERS: "http://0.0.0.0:8081"
       SCHEMA_REGISTRY_AVRO_COMPATIBILITY_LEVEL: backward
-    volumes:
-      - ./avro_schema.sh:/var/avro_schema.sh
-
 
 # ::::: CONECTOR DE INFLUXDB ::::::::::
   kafka-connect:

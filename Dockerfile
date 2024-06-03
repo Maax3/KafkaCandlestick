@@ -1,1 +1,0 @@
-ENV CONNECT_PLUGIN_PATH= "/usr/share/java,/usr/share/confluent-hub-components"
