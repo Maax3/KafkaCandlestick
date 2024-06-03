@@ -1,25 +1,40 @@
 #::::::::::: DOCUMENTACION DE LA LIBRERIA ::::::::::::
 # https://kafka-python.readthedocs.io/en/master/index.html
+# https://fastavro.readthedocs.io/en/latest/writer.html
 
 from kafka import KafkaProducer
 import requests
 import os
 import time
-import json
 from datetime import datetime
 from io import BytesIO
-from fastavro import fastavro
+from fastavro import writer
 from fastavro.schema import load_schema
 
-# El metodo compara el esquema con el mensaje entrante, despues lo escribe en el stream y lo devuelve en bytes
-schema_path = os.path.join(os.path.dirname(__file__), 'esquema.avsc')
+#Obtenemos el esquema AVRO del servicio registry-schema
+SCHEMA_REGISTRY_URL = "http://localhost:8081/subjects/criptomonedas/versions/latest"
+def fetch_schema(schema_registry_url):
+    response = requests.get(schema_registry_url)
+    schema_json = response.json()
+    return schema_json['schema']
+
+parsed_schema = fetch_schema(SCHEMA_REGISTRY_URL)
+
+#Guardamos el esquema AVRO en un fichero.avsc
+with open("esquema_avro.avsc", "w") as file:
+    print('Fichero del esquema creado!')
+    file.write(parsed_schema)
+
+schema_path = os.path.join(os.path.dirname(__file__), 'esquema_avro.avsc')
 schema = load_schema(schema_path)
-print(schema)
+
+# El metodo compara el esquema con el mensaje entrante, despues lo escribe en el stream y lo devuelve en bytes
 def avro_serializer(mensaje):
-    data = json.dumps(mensaje).encode('utf-8')
     buffer = BytesIO()
-    fastavro.schemaless_writer(buffer, data, schema)
-    return buffer.getvalue();
+    writer(buffer, schema, mensaje)
+    buffer.seek(0)
+    return buffer.read()
+
 
 
 # Sacamos datos de la API publica
@@ -46,16 +61,6 @@ if __name__ == '__main__':
       continue
 
     for moneda in data:
-      print(moneda[0])
-      print(moneda[1])
-      print(moneda[2])
-      print(moneda[3])
-      print(moneda[4])
-      print(moneda[5])
-      print(moneda[6])
-      print(moneda[7])
-      print(moneda[8])
-      print(moneda[9])
       moneda_nombre = moneda[0]
       tiempo = datetime.now()
       tiempo_actual_ms =  int(tiempo.timestamp() * 1000)
@@ -64,7 +69,7 @@ if __name__ == '__main__':
       topic="criptomonedas",
       key=moneda_nombre.encode('utf-8'),
       timestamp_ms=tiempo_actual_ms,
-      value= {
+      value= [{
           "nombre": moneda[0],
           "bid": float(moneda[1]),
           "bid_size": float(moneda[2]),
@@ -76,6 +81,7 @@ if __name__ == '__main__':
           "volume": float(moneda[8]),
           "precio_maximo": float(moneda[9]),
           "precio_minimo": float(moneda[10])
-      }
+      }]
     )
+    print('Petición realizada!')
     time.sleep(15)

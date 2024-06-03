@@ -42,11 +42,8 @@ services:
       KAFKA_DEFAULT_REPLICATION_FACTOR: 3
       KAFKA_MIN_INSYNC_REPLICAS: 2
       KAFKA_LOG_DIRS: /var/lib/kafka/data
-    volumes:
-      - ./logs/kafka-logs-broker1:/var/lib/kafka/data
-      - ./server-logs/kafka-broker1:/var/log/kafka
 
-# ::::: KAFKA BROKER 3 ::::::::::::
+# ::::: KAFKA BROKER 2 ::::::::::::
   broker_2:
     image: confluentinc/cp-kafka:latest
     hostname: broker_2
@@ -76,9 +73,6 @@ services:
       KAFKA_DEFAULT_REPLICATION_FACTOR: 3
       KAFKA_MIN_INSYNC_REPLICAS: 2
       KAFKA_LOG_DIRS: /var/lib/kafka/data
-    volumes:
-      - ./logs/kafka-logs-broker2:/var/lib/kafka/data
-      - ./server-logs/kafka-broker2:/var/log/kafka
 
 # ::::: KAFKA BROKER 3 ::::::::::::
   broker_3:
@@ -110,9 +104,6 @@ services:
       KAFKA_DEFAULT_REPLICATION_FACTOR: 3
       KAFKA_MIN_INSYNC_REPLICAS: 2
       KAFKA_LOG_DIRS: /var/lib/kafka/data
-    volumes:
-      - ./logs/kafka-logs-broker3:/var/lib/kafka/data
-      - ./server-logs/kafka-broker3:/var/log/kafka
 
 # ::::: VISUALIZADOR DE KAFKA ::::::::::::
   kafka-ui:
@@ -133,8 +124,99 @@ services:
       KAFKA_CLUSTERS_0_ZOOKEEPER: zookeeper:2181
 
 # ::::: ESQUEMA DE KAFKA PARA AVRO ::::::::::::
+  schema-registry:
+    image: confluentinc/cp-schema-registry:latest
+    hostname: schema-registry
+    container_name: schema-registry
+    depends_on:
+      - broker_1
+      - broker_2
+      - broker_3
+    ports:
+      - "8081:8081"
+    networks:
+      - kafka_net
+    environment:
+      SCHEMA_REGISTRY_KAFKASTORE_BOOTSTRAP_SERVERS: broker_1:29090,broker_2:29091,broker_3:29092
+      SCHEMA_REGISTRY_HOST_NAME: schema-registry
+      SCHEMA_REGISTRY_LISTENERS: "http://0.0.0.0:8081"
+      SCHEMA_REGISTRY_AVRO_COMPATIBILITY_LEVEL: backward
+    volumes:
+      - ./avro_schema.sh:/var/avro_schema.sh
+
+
+# ::::: CONECTOR DE INFLUXDB ::::::::::
+  kafka-connect:
+    image: confluentinc/cp-kafka-connect:latest
+    hostname: kafka-connect
+    container_name: kafka-connect
+    depends_on:
+      - broker_1
+      - broker_2
+      - broker_3
+      - schema-registry
+    ports:
+      - "8083:8083"
+    environment:
+      CONNECT_BOOTSTRAP_SERVERS: "broker_1:29090,broker_2:29091,broker_3:29092"
+      CONNECT_REST_PORT: 8083
+      CONNECT_REST_ADVERTISED_HOST_NAME: kafka-connect
+      CONNECT_GROUP_ID: compose-connect-group
+      CONNECT_VALUE_CONVERTER_SCHEMA_REGISTRY_URL: "http://schema-registry:8081"
+      CONNECT_KEY_CONVERTER: org.apache.kafka.connect.storage.StringConverter
+      CONNECT_VALUE_CONVERTER: io.confluent.connect.avro.AvroConverter
+      CONNECT_CONFIG_STORAGE_TOPIC: docker-connect-configs
+      CONNECT_OFFSET_STORAGE_TOPIC: docker-connect-offsets
+      CONNECT_STATUS_STORAGE_TOPIC: docker-connect-status
+      CONNECT_INTERNAL_KEY_CONVERTER: org.apache.kafka.connect.json.JsonConverter
+      CONNECT_INTERNAL_VALUE_CONVERTER: org.apache.kafka.connect.json.JsonConverter
+      CONNECT_CONFIG_STORAGE_REPLICATION_FACTOR: 1
+      CONNECT_OFFSET_STORAGE_REPLICATION_FACTOR: 1
+      CONNECT_STATUS_STORAGE_REPLICATION_FACTOR: 1
+      CONNECT_LOG4J_LOGGERS: org.apache.zookeeper=ERROR,org.I0Itec.zkclient=ERROR,org.reflections=ERROR
+      CONNECT_LOG4J_ROOT_LOGLEVEL: "INFO"
+      CONNECT_LOG4J_APPENDER_STDOUT_LAYOUT_CONVERSIONPATTERN: "[%d] %p %X{connector.context}%m (%c:%L)%n"
+      CONNECT_PLUGIN_PATH: "/usr/share/java,/usr/share/confluent-hub-components/"
+    command:
+      - bash
+      - -c
+      - |
+        echo "Instalacion del plugin"
+        confluent-hub install --no-prompt confluentinc/kafka-connect-influxdb:latest
+        /etc/confluent/docker/run &
+        sleep infinity
+    volumes:
+      - ./influxdb-sink-connector:/etc/kafka-connect-influxdb/influxdb-sink-connector.properties
+      #quitar el /?etc
+
+#::::::::::: INFLUX DB :::::::::::::::::::
+# :::http://localhost:8086/api/v2/config::
+
+  influxdb:
+    image: influxdb:2.7
+    hostname: influxdb
+    container_name: influxdb
+    networks:
+      - kafka_net
+    ports:
+      - "8086:8086"
+    depends_on:
+      - schema-registry
+      - kafka-connect
+    volumes:
+      - influxdb2-data:/var/lib/influxdb2
+    environment:
+      - DOCKER_INFLUXDB_INIT_MODE=setup
+      - DOCKER_INFLUXDB_INIT_USERNAME=${DB_USER}
+      - DOCKER_INFLUXDB_INIT_PASSWORD=${DB_PASSWORD}
+      - DOCKER_INFLUXDB_INIT_RETENTION=1w #Por defecto el borrado esta configurado a 30min
+      - DOCKER_INFLUXDB_INIT_BUCKET=criptoseries
+      - DOCKER_INFLUXDB_INIT_ORG=viewnext
 
 networks:
   kafka_net:
     name: network_kafka_conexion
+
+volumes:
+  influxdb2-data:
   
