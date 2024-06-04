@@ -142,6 +142,50 @@ services:
       SCHEMA_REGISTRY_LISTENERS: "http://0.0.0.0:8081"
       SCHEMA_REGISTRY_AVRO_COMPATIBILITY_LEVEL: backward
 
+# ::::: KAFKA CONNECT PARA INFLUXDB ::::::::::
+  kafka-connect:
+    image: confluentinc/cp-kafka-connect:latest
+    hostname: kafka-connect
+    container_name: kafka-connect
+    depends_on:
+      - broker_1
+      - broker_2
+      - broker_3
+      - schema-registry
+    ports:
+      - "8083:8083"
+    environment:
+      CONNECT_BOOTSTRAP_SERVERS: broker_1:29090,broker_2:29091,broker_3:29092
+      CONNECT_REST_PORT: 8083
+      CONNECT_REST_ADVERTISED_HOST_NAME: kafka-connect
+      CONNECT_GROUP_ID: compose-connect-group
+      CONNECT_VALUE_CONVERTER_SCHEMA_REGISTRY_URL: "http://schema-registry:8081"
+      CONNECT_KEY_CONVERTER: org.apache.kafka.connect.storage.StringConverter
+      CONNECT_VALUE_CONVERTER: io.confluent.connect.avro.AvroConverter
+      CONNECT_CONFIG_STORAGE_TOPIC: docker-connect-configs
+      CONNECT_OFFSET_STORAGE_TOPIC: docker-connect-offsets
+      CONNECT_STATUS_STORAGE_TOPIC: docker-connect-status
+      CONNECT_INTERNAL_KEY_CONVERTER: org.apache.kafka.connect.json.JsonConverter
+      CONNECT_INTERNAL_VALUE_CONVERTER: org.apache.kafka.connect.json.JsonConverter
+      CONNECT_CONFIG_STORAGE_REPLICATION_FACTOR: 1
+      CONNECT_OFFSET_STORAGE_REPLICATION_FACTOR: 1
+      CONNECT_STATUS_STORAGE_REPLICATION_FACTOR: 1
+      CONNECT_LOG4J_LOGGERS: org.apache.zookeeper=ERROR,org.I0Itec.zkclient=ERROR,org.reflections=ERROR
+      CONNECT_LOG4J_ROOT_LOGLEVEL: "INFO"
+      CONNECT_LOG4J_APPENDER_STDOUT_LAYOUT_CONVERSIONPATTERN: "[%d] %p %X{connector.context}%m (%c:%L)%n"
+      CONNECT_PLUGIN_PATH: "/usr/share/java,/usr/share/confluent-hub-components/"
+    command:
+      - bash
+      - -c
+      - |
+        echo "Instalacion del plugin"
+        confluent-hub install --no-prompt confluentinc/kafka-connect-influxdb:latest
+        /etc/confluent/docker/run &
+        sleep infinity
+    volumes:
+      - ./scripts/influxdb-sink-connector.properties:/etc/kafka-connect-influxdb/influxdb-sink-connector.properties
+      #quitar el /?etc
+
 #::::::::::: INFLUX DB :::::::::::::::::::
 # :::http://localhost:8086/api/v2/config::
 
@@ -166,6 +210,27 @@ services:
       - DOCKER_INFLUXDB_INIT_BUCKET=criptoseries
       - DOCKER_INFLUXDB_INIT_ORG=viewnext
 
+#::::::TEST REST PROXY::::::::::
+
+  rest-proxy:
+    image: confluentinc/cp-kafka-rest:latest
+    hostname: rest-proxy
+    container_name: rest-proxy
+    networks:
+      - kafka_net
+    depends_on:
+      - broker_1
+      - broker_2
+      - broker_3
+      - schema-registry
+    ports:
+      - "8084:8084"
+    environment:
+      KAFKA_REST_LISTENERS: http://0.0.0.0:8084
+      KAFKA_REST_SCHEMA_REGISTRY_URL: http://schema-registry:8081
+      KAFKA_REST_HOST_NAME: rest-proxy
+      KAFKA_REST_BOOTSTRAP_SERVERS: broker_1:29090,broker_2:29091,broker_3:29092
+      #http://195.235.176.225:8084/
 
 networks:
   kafka_net:

@@ -217,7 +217,7 @@ puede ser asignada a un solo consumidor. TLDR: los consumidores de un mismo grup
 Kafka tiene 3 patrones de consumo:
  - Exactly-Once: Garantiza que cada mensaje se procese exactamente una vez, eliminando los duplicados.
  - At-most-once: Garantiza que cada mensaje se envie al consumidor, pero no asegura que este lo haya procesado
- - At-Least-Once: Garantiza que cada mensaje se envie al consumidor y que se procese al menos una vez, pero puede provocar duplicados. 
+ - At-Least-Once: Garantiza que cada mensaje se envie al consumidor y que se procese al menos una vez, pero puede provocar duplicados.
 
 Hay dos valores principales que se pueden usar para auto_offset_reset:
  - earliest: Esto significa que el consumidor comenzará a leer desde el offset más temprano disponible para el topic al que está suscrito. En otras palabras, si no hay un offset inicial disponible (porque es la primera vez que el consumidor se une al grupo o porque el offset inicial se ha perdido), el consumidor comenzará a leer desde el principio del registro de transacciones (commit log) del topic.
