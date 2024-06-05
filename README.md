@@ -223,6 +223,36 @@ Hay dos valores principales que se pueden usar para auto_offset_reset:
  - earliest: Esto significa que el consumidor comenzará a leer desde el offset más temprano disponible para el topic al que está suscrito. En otras palabras, si no hay un offset inicial disponible (porque es la primera vez que el consumidor se une al grupo o porque el offset inicial se ha perdido), el consumidor comenzará a leer desde el principio del registro de transacciones (commit log) del topic.
  - latest: Esto significa que el consumidor comenzará a leer desde el offset más reciente disponible para el topic al que está suscrito. Si no hay un offset inicial disponible, el consumidor comenzará a leer desde el final del registro de transacciones del topic.
 
+ ### Estrategias de consumo
+
+ Dentro de los grupos de consumidores puedes establecer diferentes estrategias que influyen en cómo se consumen los datos de las diferentes particiones y tópicos. Kafka incluye varias estrategias y también te permite crear algoritmos personalizados:
+ - RangeAssignor (por defecto)
+ - RoundRobin
+ - StickyAssignor
+
+ #### RangeAssignor
+
+ Cuando hay múltiples tópicos y consumidores, agrupa las diferentes particiones por su member-id. De modo que el consumidor[0] se ocuparía de todas las particiones[0] de topic 1 y 2, mientras que el consumidor[1] lo haria de las particiones[1] de los distintos topics.
+
+![](imgs/consumerGroupStr.png)
+
+#### RoundRobinAssignor
+
+Distribuye las particiones de forma equitativa entre los diferentes consumidores ignorando de que topico provengan. Esta estrategia, aunque útil, puede presentar problemas a la hora de la reasignación cuando uno de los consumidores pase a no disponible.
+
+![](imgs/consumerGroups1.png)
+
+![](imgs/consumerGroups2.png)
+
+#### StickyAssignor
+
+Se comporta de forma similar al Round Robin, pero intenta minimizar el movimiento (asignación de consumo) entre las diferentes particiones. Usando el ejemplo anterior, si el consumidor C2 muere o abandona el grupo, entonces solo se produce una reasignación (particion A1 => C3).
+
+![](imgs/consumerGroups3.png)
+
+
+ * [Mas info](https://medium.com/streamthoughts/understanding-kafka-partition-assignment-strategies-and-how-to-write-your-own-custom-assignor-ebeda1fc06f3)
+
 # Productor y particiones
 
 - Cada particion puede ser interpretada como una unidad independiente de streaming de mensajes. Tanto productores como consumidores pueden escribir y leer datos de forma concurrente.

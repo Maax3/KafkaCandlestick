@@ -11,8 +11,9 @@ from io import BytesIO
 from fastavro import writer
 from fastavro.schema import load_schema
 
-#Obtenemos el esquema AVRO del servicio registry-schema
+
 SCHEMA_REGISTRY_URL = "http://localhost:8081/subjects/criptomonedas/versions/latest"
+# :::::Creacion del fichero .avro para su posterior reutilizacion::::::
 def fetch_schema(schema_registry_url):
     response = requests.get(schema_registry_url)
     schema_json = response.json()
@@ -20,7 +21,6 @@ def fetch_schema(schema_registry_url):
 
 parsed_schema = fetch_schema(SCHEMA_REGISTRY_URL)
 dir_actual = os.path.dirname(__file__)
-print(dir_actual)
 #Guardamos el esquema AVRO en un fichero.avsc
 with open(f'{dir_actual}/esquema_avro.avsc', "w") as file:
     print('Fichero del esquema creado!')
@@ -29,13 +29,12 @@ with open(f'{dir_actual}/esquema_avro.avsc', "w") as file:
 schema_path = os.path.join(os.path.dirname(__file__), 'esquema_avro.avsc')
 schema = load_schema(schema_path)
 
-# El metodo compara el esquema con el mensaje entrante, despues lo escribe en el stream y lo devuelve en bytes
-def avro_serializer(mensaje):
+# Codificador de mensajes en formato AVRO
+def avro_coder(mensaje):
     buffer = BytesIO()
     writer(buffer, schema, mensaje)
     buffer.seek(0)
     return buffer.read()
-
 
 
 # Sacamos datos de la API publica
@@ -45,9 +44,11 @@ def get_data():
   response = requests.get(url, headers=headers)
   return response.json()
 
+
+# :::::PARAMETROS DEL PRODUCTOR::::::
 productor_bitfinex = KafkaProducer(
   bootstrap_servers= ['localhost:19092','localhost:19091','localhost:19090'],
-  value_serializer=avro_serializer,
+  value_serializer=avro_coder,
   acks='all'
 )
 
