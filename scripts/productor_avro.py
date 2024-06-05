@@ -17,7 +17,7 @@ SCHEMA_REGISTRY_URL = "http://localhost:8081/subjects/criptomonedas/versions/lat
 def fetch_schema(schema_registry_url):
     response = requests.get(schema_registry_url)
     schema_json = response.json()
-    return schema_json['schema']
+    return schema_json['schema'] #Devuelve un str
 
 parsed_schema = fetch_schema(SCHEMA_REGISTRY_URL)
 dir_actual = os.path.dirname(__file__)
