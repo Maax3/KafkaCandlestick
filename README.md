@@ -6,22 +6,18 @@
   ```
 
 # Enlaces
-* [EJEMPLO DE KAFKA (NullSafe (ES))](https://www.youtube.com/watch?v=MA-nxL14fr4&ab_channel=NullSafeArchitect)
-* [KAFKA CONECTORES (NullSafe (ES))](https://www.youtube.com/watch?v=texXOyt-bPE&ab_channel=NullSafeArchitect)
-* [KAFKA STREAMING (ES)](https://www.youtube.com/watch?v=8W6rFRk5SZE&list=PL2yjEVbRSX7WjbVrfG4b7VxuZa69Y5zrO&index=5&ab_channel=ParadigmaDigital)
-* [SETUP KAFKA DOCKER (EN)](https://www.youtube.com/watch?v=L--VuzFiYrM&ab_channel=OttoCodes)
-* [SETUP KAFKA SENCILLO EN DOCKER (ES)](https://www.youtube.com/watch?v=rhUuD0eA-EQ&ab_channel=DebuggeandoIdeas)
-* [BASES KAFKA y EJEMPLOS REALES (EN)](https://www.youtube.com/watch?v=wmuuOYDaaBw&list=PLCh59G4US86oC5GnhYrSrKZKDoQbfzZLW&ab_channel=Upstash)
-* [BASES DE KAFKA (RU)](https://www.youtube.com/watch?v=-AZOi3kP9Js)
-* [LISTA DE VARIABLES KAFKA](https://docs.confluent.io/platform/current/installation/configuration/broker-configs.html?#)
+* [VIDEO - BASES DE KAFKA (RU)](https://www.youtube.com/watch?v=-AZOi3kP9Js)
+* [VIDEO - EJEMPLO DE KAFKA (NullSafe (ES))](https://www.youtube.com/watch?v=MA-nxL14fr4&ab_channel=NullSafeArchitect)
+* [VIDEO - Conexion con Azure Databricks](https://www.youtube.com/watch?v=Sa3ubGXvT44&ab_channel=NextGenLearning)
+* [VIDEO - CONFIG DE INFLUXDB y GRAFANA CLOUD](https://youtu.be/pPKFafZug2k?feature=shared)
+* [DOCUMENTACION VARIABLES KAFKA](https://docs.confluent.io/platform/current/installation/configuration/broker-configs.html?#)
 * [DOCUMENTACION DE CONEXION CON DOCKER](https://docs.confluent.io/platform/current/kafka/multi-node.html#cp-multi-node)
-* [COMO SE ESCRIBEN LAS VARIABLES DE KAFKA EN DOCKER](https://docs.confluent.io/platform/current/installation/docker/config-reference.html#config-reference)
-* [Conexion con Azure Databricks](https://www.youtube.com/watch?v=Sa3ubGXvT44&ab_channel=NextGenLearning)
-* [Información sobre Kafka SQL o KSQL y sus diferencias con Kafka Stream API](https://es.slideshare.net/KaiWaehner/kafka-streams-vs-ksql-for-stream-processing-on-top-of-apache-kafka-142127337)
+* [DOCUMENTACION VARIABLES DE KAFKA EN DOCKER](https://docs.confluent.io/platform/current/installation/docker/config-reference.html#config-reference)
+* [DOCUMENTACION sobre Kafka SQL o KSQL y sus diferencias con Kafka Stream API](https://es.slideshare.net/KaiWaehner/kafka-streams-vs-ksql-for-stream-processing-on-top-of-apache-kafka-142127337)
+* [DOCUMENTACION GUARDAR DATOS USANDO PYTHON EN INFLUXDB](https://docs.influxdata.com/influxdb/v2/api-guide/client-libraries/python/)
 
-# Configuración de conexión
-* [PART1](https://rmoff.net/2018/08/02/kafka-listeners-explained/)
-* [PART2](https://www.confluent.io/blog/kafka-client-cannot-connect-to-broker-on-aws-on-docker-etc/?utm_source=github&utm_medium=rmoff&utm_campaign=ty.community.con.rmoff-listeners&utm_term=rmoff-devx)
+
+
 
 # Apis
 * cryptoCompare
@@ -320,3 +316,10 @@ Kafka toma la clave del mensaje, calcula su hash y luego aplica una operación d
 Zero-Copy en Kafka es una técnica de optimización que permite transferir datos entre productores y consumidores sin copiarlos de un búfer de memoria a otro, lo que mejora significativamente el rendimiento del sistema.
 
   
+# Apuntes varios sobre INFLUX DB
+
+Dentro de InfluxDB existen los campos (fields) y las etiquetas (tags). Los ``tags`` son opcionales, pero a diferencia de los ``fields`` están indexados. Por tanto, son útiles para guardar el metadata y realizar filtros/queries sobre ello. 
+
+In InfluxDB, a series is a collection of points that share a measurement, tag set, and field key. A point represents a single data record that has four components: a measurement, tag set, field set, and a timestamp. A point is uniquely identified by its series and timestamp.
+
+[Más info](https://docs.influxdata.com/influxdb/v1/concepts/key_concepts/)

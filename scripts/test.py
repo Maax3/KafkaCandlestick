@@ -1,18 +1,25 @@
-from kafka import KafkaConsumer
+import os
 import threading
-from io import BytesIO
 import fastavro
+import json
+import influxdb_client
+import datetime as dt
+from dotenv import load_dotenv
+from kafka import KafkaConsumer
+from io import BytesIO
 from fastavro.schema import parse_schema
 from productor_avro import fetch_schema
-import json
 from influxdb_client import InfluxDBClient, Point, WritePrecision
+from influxdb_client.client.write_api import SYNCHRONOUS
+
+load_dotenv()
 
 #::::ESTE ARCHIVO SIMULA 2 CONSUMIDORES MEDIANTE HILOS:::
-
-SCHEMA_URL = "http://localhost:8081/subjects/criptomonedas/versions/latest"
-schema = json.loads(fetch_schema(SCHEMA_URL)) #convierte str a json
+schema = json.loads(fetch_schema(os.getenv("SCHEMA_URL"))) #convierte str a json
 avro_schema = parse_schema(schema)
 
+
+#::::CONFIGURACION DE LOS CONSUMIDORES:::
 conf = {
   "bootstrap_servers": ['localhost:19092', 'localhost:19091', 'localhost:19090'],
   "auto_offset_reset": 'earliest',
@@ -32,10 +39,15 @@ consumidor_2 = KafkaConsumer(
        **conf,
 )
 
-# Conexión a InfluxDB
-influxdb_client = InfluxDBClient(url="http://localhost:8086", token="your_token", org="your_org")
+
+influxdb_client = InfluxDBClient(
+  url=os.getenv("URL_SERVER"), 
+  token=os.getenv("TOKEN"), 
+  org=os.getenv("ORG")
+)
+
+bucket="criptodata"
 write_api = influxdb_client.write_api(write_options=SYNCHRONOUS)
-bucket = "your_bucket"
 
 # Función para deserializar mensajes Avro
 def avro_decoder(message_value):
@@ -47,11 +59,19 @@ def avro_decoder(message_value):
 # Función para consumir mensajes y escribir en InfluxDB
 def ver_mensajes(consumer):
   for message in consumer:
-    message_value = message.value
-    avro_record = avro_decoder(message_value)
-    print(f"El {consumer.config['client_id']} se ha ocupado del: {avro_record}\n")
-    point = Point("criptomonedas").tag("client_id", consumer.config['client_id']).field("data", avro_record)
-    write_api.write(bucket=bucket, record=point)
+    mensaje = avro_decoder(message.value)
+    print(f"El {consumer.config['client_id']} se ha ocupado del: {mensaje}\n")
+    
+    #tiempo_actual = dt.datetime.now()
+    #timestamp = int(tiempo_actual.timestamp())
+    tiempo_actual = dt.datetime.utcnow()
+    timestamp = tiempo_actual.isoformat() + 'Z'  # Añadir 'Z' para indicar que es en formato UTC
+    registro = (
+      Point("criptomonedas")
+      .tag("Moneda", mensaje['nombre'])
+      .field("Precio", mensaje['precio_ultimo'])).time(timestamp)
+    
+    write_api.write(bucket=bucket, org=os.getenv("ORG"), record=registro)
 
 # Creamos un hilo para cada consumidor, o en otras palabras, asignamos la funcion ver_mensajes a cada consumidor
 threads = []

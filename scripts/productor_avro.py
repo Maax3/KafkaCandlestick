@@ -10,16 +10,18 @@ from datetime import datetime
 from io import BytesIO
 from fastavro import writer
 from fastavro.schema import load_schema
+from dotenv import load_dotenv
+load_dotenv()
 
 
-SCHEMA_REGISTRY_URL = "http://localhost:8081/subjects/criptomonedas/versions/latest"
-# :::::Creacion del fichero .avro para su posterior reutilizacion::::::
-def fetch_schema(schema_registry_url):
-    response = requests.get(schema_registry_url)
+# :::::Obtener el .avro para su posterior reutilizacion::::::
+def fetch_schema(schema_url):
+    response = requests.get(schema_url)
     schema_json = response.json()
     return schema_json['schema'] #Devuelve un str
 
-parsed_schema = fetch_schema(SCHEMA_REGISTRY_URL)
+# IMPORT del esquema AVRO
+parsed_schema = fetch_schema(os.getenv("SCHEMA_URL"))
 dir_actual = os.path.dirname(__file__)
 #Guardamos el esquema AVRO en un fichero.avsc
 with open(f'{dir_actual}/esquema_avro.avsc', "w") as file:

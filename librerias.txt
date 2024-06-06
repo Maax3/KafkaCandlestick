@@ -1,5 +1,6 @@
-kafka-python
-requests
-fastavro
+kafka-python >= 2.0.2
+requests >= 2.32.3
+fastavro >= 1.9.4
+influxdb-client >= 1.43.0
+python-dotenv >= 1.0.1
 influxdb3-python
-avro
