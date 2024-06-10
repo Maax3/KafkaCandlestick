@@ -24,9 +24,13 @@ def fetch_schema(schema_url):
 parsed_schema = fetch_schema(os.getenv("SCHEMA_URL"))
 dir_actual = os.path.dirname(__file__)
 #Guardamos el esquema AVRO en un fichero.avsc
-with open(f'{dir_actual}/esquema_avro.avsc', "w") as file:
+
+try:
+  with open(f'{dir_actual}/esquema_avro.avsc', "w") as file:
     print('Fichero del esquema creado!')
     file.write(parsed_schema)
+except Exception as Error:
+  print(f'Error en abrir el fichero {Error}')
 
 schema_path = os.path.join(os.path.dirname(__file__), 'esquema_avro.avsc')
 schema = load_schema(schema_path)

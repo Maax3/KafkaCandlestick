@@ -31,7 +31,7 @@ services:
       KAFKA_INTER_BROKER_LISTENER_NAME: RED_INTERNA
       KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: RED_INTERNA:PLAINTEXT,RED_EXTERNA:PLAINTEXT,RED_LOCAL:PLAINTEXT #plaintext = sin cifrado
       KAFKA_ADVERTISED_LISTENERS: 
-        RED_EXTERNA://si_puedes_abrir_puertos_add_tu_consumidor_dns_here:9090,
+        RED_EXTERNA://kafka-azure.norwayeast.cloudapp.azure.com:9090,
         RED_INTERNA://broker_1:29090,
         RED_LOCAL://localhost:19090
       KAFKA_LISTENERS: 
@@ -62,7 +62,7 @@ services:
       KAFKA_INTER_BROKER_LISTENER_NAME: RED_INTERNA
       KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: RED_INTERNA:PLAINTEXT,RED_EXTERNA:PLAINTEXT,RED_LOCAL:PLAINTEXT
       KAFKA_ADVERTISED_LISTENERS: 
-        RED_EXTERNA://si_puedes_abrir_puertos_add_tu_consumidor_dns_here:9091,
+        RED_EXTERNA://kafka-azure.norwayeast.cloudapp.azure.com:9091,
         RED_INTERNA://broker_2:29091,
         RED_LOCAL://localhost:19091
       KAFKA_LISTENERS: 
@@ -93,7 +93,7 @@ services:
       KAFKA_INTER_BROKER_LISTENER_NAME: RED_INTERNA
       KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: RED_INTERNA:PLAINTEXT,RED_EXTERNA:PLAINTEXT,RED_LOCAL:PLAINTEXT
       KAFKA_ADVERTISED_LISTENERS: 
-        RED_EXTERNA://si_puedes_abrir_puertos_add_tu_consumidor_dns_here:9092,
+        RED_EXTERNA://kafka-azure.norwayeast.cloudapp.azure.com:9092,
         RED_INTERNA://broker_3:29092,
         RED_LOCAL://localhost:19092
       KAFKA_LISTENERS: 
@@ -144,7 +144,6 @@ services:
 
 networks:
   kafka_net:
-    name: network_kafka_conexion
 
 volumes:
   influxdb2-data:
