@@ -74,7 +74,7 @@ if __name__ == '__main__':
       tiempo_actual_ms =  int(tiempo.timestamp() * 1000)
       #El productor distribuye cada moneda en particiones distintas segun su 'key' aka nombre
       productor_bitfinex.send(
-      topic="criptomonedas",
+      topic=os.getenv("TOPIC"),
       key=moneda_nombre.encode('utf-8'),
       timestamp_ms=tiempo_actual_ms,
       value= [{
@@ -91,5 +91,5 @@ if __name__ == '__main__':
           "precio_minimo": float(moneda[10])
       }]
     )
-    print('Petición realizada!')
+    print(f'Petición realizada! {tiempo}')
     time.sleep(15)

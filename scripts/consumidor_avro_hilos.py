@@ -17,7 +17,7 @@ load_dotenv()
 #::::ESTE ARCHIVO SIMULA 2 CONSUMIDORES MEDIANTE HILOS:::
 schema = json.loads(fetch_schema(os.getenv("SCHEMA_URL"))) #convierte str a json
 avro_schema = parse_schema(schema)
-
+print(avro_schema)
 
 #::::CONFIGURACION DE LOS CONSUMIDORES:::
 conf = {
@@ -28,14 +28,14 @@ conf = {
 }
 
 consumidor_1 = KafkaConsumer(
-       "criptomonedas",
-       client_id="Jamon",
+       os.getenv("TOPIC"),
+       client_id="Python_1",
        **conf,
 )
 
 consumidor_2 = KafkaConsumer(
-       "criptomonedas",
-       client_id="Bacon",
+       os.getenv("TOPIC"),
+       client_id="Python_2",
        **conf,
 )
 
@@ -46,7 +46,7 @@ influxdb_client = InfluxDBClient(
   org=os.getenv("ORG")
 )
 
-bucket="criptodata"
+bucket="criptobucket"
 write_api = influxdb_client.write_api(write_options=SYNCHRONOUS)
 
 # Función para deserializar mensajes Avro
@@ -67,9 +67,17 @@ def ver_mensajes(consumer):
     tiempo_actual = dt.datetime.utcnow()
     timestamp = tiempo_actual.isoformat() + 'Z'  # Añadir 'Z' para indicar que es en formato UTC
     registro = (
-      Point("criptomonedas")
-      .tag("Moneda", mensaje['nombre'])
-      .field("Precio", mensaje['precio_ultimo'])).time(timestamp)
+      Point("criptomonedas123")
+      .tag("Coin", mensaje['nombre'])
+      .field("highest_bid", mensaje['bid'])
+      .field("bid_size_sum", mensaje['bid_size'])
+      .field("lowest_ask", mensaje['precio_ultimo'])
+      .field("ask_size_sum", mensaje['precio_ultimo'])
+      .field("daily_change", mensaje['daily_change'])
+      .field("volume", mensaje['volume'])
+      .field("daily_max_price", mensaje['precio_maximo'])
+      .field("daily_min_price", mensaje['precio_minimo'])
+      .field("close_price", mensaje['precio_ultimo'])).time(timestamp)
     
     write_api.write(bucket=bucket, org=os.getenv("ORG"), record=registro)
 

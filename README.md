@@ -1,3 +1,19 @@
+# Influx Query
+
+```sql
+SELECT
+  DATE_BIN(INTERVAL '2 minutes', time, '1970-01-01T00:00:00Z'::TIMESTAMP) AS _time,
+  first_value(close_price ORDER BY time) AS Open,
+  MAX(close_price) AS High,
+  MIN(close_price) AS Low,
+  last_value(close_price ORDER BY time) AS Close
+FROM "criptomonedas123"
+WHERE "Coin" IN ('tBTCUSD')
+GROUP BY _time
+ORDER BY _time
+
+```
+
 # Entorno
   ```python
   python -m venv kafka
