@@ -1,6 +1,91 @@
+# Introducción
+
+* Gif de kafka UI de como recibe el proceso?
+* Gif de los mensajes en consola
+
+* [URL pública de Grafana](https://mesekav225.grafana.net/public-dashboards/6cc9bbf2b39e48b3965aa73c4a4d91a5)
+
+Este proyecto busca poner en práctica lo aprendido con ``KAFKA``. Consiste en una representación en tiempo real de un gráfico de velas sobre las criptomonedas más populares. 
+
+La base del proyecto se apoyoa en un archivo ``DOCKER`` que contiene todos los servicios necesarios para ``KAFKA`` así como sus servidores (brokers).
+
+Además de Docker he usado:
+ - ``Python`` para realizar los diferentes scripts de los productores/consumidores.
+ - ``InfluxDB`` como almacenamiento de los datos temporales.
+ - ``Grafana`` para visualizar los datos en Streaming.
+
+ # Esquema general del proyecto
+
+![](imgs/esquema1.png)
 
 
-# Influx Query
+### Estructura del proyecto
+
+| **Nº** | **Componente** | **Descripción** |
+| --- | --- | --- |
+| 1 | Productor | Nuestro generador de datos |
+| 2  |Consumidores | Nuestros clientes |
+
+| | |
+| --- | --- |
+| 1 |**Tópico** | Estructura de datos que almacena los mensajes |
+| 2 |Particiones | Estructura de datos que almacena los mensajes |
+| 3 |Réplicas | Estructura de datos que almacena los mensajes |
+| 2 |ISR | Estructura de datos que almacena los mensajes |
+
+
+Tenemos un productor que, en este caso, obtiene datos de una API de criptomonedas y envía los mensajes al Topic creado mediante el método de ``key-hash``.  
+
+
+# Esquema interno del proceso de datos
+
+![](imgs/kafka_serialization2.png)
+
+# Productor
+
+### A la hora de definir la particion en el Productor:
+ - Puedes especificar que sea por ``Round-Robin`` para que los mensajes se repartan entre las particiones existentes de forma equitativa.
+ - Puedes especificar una ``particion de forma explicita``. Por ejemplo: "Productor 1 que envie al topic A - particion 0"
+ - Por ``key-hash``. Se utiliza para distribuir los mensajes de forma equitativa entre las diferentes particiones y al mismo tiempo garantiza que todos los mensajes con la misma clave sean enviados a la misma partición. 
+ 
+ 
+#### Ejemplo del key-hash
+
+```python
+  producer.produce('mi_topic', key='Panes', value='Pan de almendras y nueces', callback=delivery)
+  producer.produce('mi_topic', key='Bollos', value='Cupcake de fresa', callback=delivery)
+  producer.produce('mi_topic', key='Bollos', value='Berlina de chocolate', callback=delivery)
+  producer.produce('mi_topic', key='Panes', value='Pan de semillas', callback=delivery)
+```
+
+**Si tenemos 2 particiones**:
+ - Particion 0 => Todos los mensajes con la clave 'Bollos'.
+ - Particion 1 => Todos los mensajes con la clave 'Panes'.
+
+**Como funciona el key-hash internamente:**
+
+Kafka toma la clave del mensaje, calcula su hash y luego aplica una operación de módulo con el número de particiones del topic (hash(key) % num_partitions). El resultado de esta operación es el índice de la partición a la que se enviará el mensaje
+
+
+# Consumidores
+
+# Docker - Kafka
+
+## Kafka
+
+## Kafka-UI
+
+## Schema-registry
+
+# Influx
+
+### ¿Qué es InfluxDB?
+
+InfluxDB es una base de datos orientada a series temporales que combina campos indexados (fields) y no indexados (tags) permitiendo realizar consultas muy rápidas sobre nuestros datos. 
+
+### Uso
+
+Se ha utilizado la siguiente consulta para que el gráfico de vela pudiera consumir correctamente los datos de nuestra API.
 
 ```sql
 SELECT
@@ -13,15 +98,28 @@ FROM "criptomonedas123"
 WHERE "Coin" IN ('tBTCUSD')
 GROUP BY _time
 ORDER BY _time
-
 ```
 
-# Entorno
-  ```python
-  python -m venv kafka
-  source venv/bin/activate
-  pip list
-  ```
+* ``DATE_BIN()::TIMESTAMP::`` Crea un intervalo de tiempo y lo formatea a TIMESTAMP.
+* ``first_value("close_price"):`` Selecciona el primer precio de cierre en el intervalo.
+* ``last_value("close_price"):`` Selecciona el último precio de cierre en el intervalo.
+* ``MAX("close_price"):`` Selecciona el precio más alto de la moneda dentro en el intervalo.
+* ``MIN("close_price"):`` Selecciona el precio más bajo de la moneda dentro en el intervalo.
+
+
+# Visualización - Grafana
+
+### ¿Qué es Grafana?
+
+``Grafana`` es una plataforma interactiva y dinámica de código abierto. Permite almacenar, visualizar, analizar y comprender métricas de rendimiento/datos de una forma clara y sencilla. 
+
+### Gráficos
+
+[insertar GIF de BIT]
+[insertar GIF de ETH]
+
+
+---------------------------------------------------------------------------------------------------------
 
 # Enlaces
 * [VIDEO - BASES DE KAFKA (RU)](https://www.youtube.com/watch?v=-AZOi3kP9Js)
