@@ -1,5 +1,5 @@
-# Indice
-- [Indice](#indice)
+# Índice
+- [Índice](#indice)
 - [Introducción](#introducción)
 - [Instalación y prueba](#instalación-y-prueba)
     - [Requerimientos](#requerimientos)
@@ -104,10 +104,10 @@ Por defecto, las réplicas seguidoras (no líder) copian la información de form
 
 Esto permite una mayor tolerancia a fallos y asegura la disponibilidad de los datos. Por ejemplo:
 
-Si sólo hay una copia síncrona y esta muere, puede haber pérdida de datos. Si existen más de una, es casi imposible perder información.
+Si solo hay una copia síncrona y esta muere, puede haber pérdida de datos. Si existen más de una, es casi imposible perder información.
 
 #### Parámetro 'acks'
-Además de establecer el ``min.insync`` (ISR) también hay que configurar el envio de mensajes que hace el productor, en este caso, habria que establecer el parámetro ``acks=all``. 
+Además de establecer el ``min.insync`` (ISR) también hay que configurar el envío de mensajes que hace el productor, en este caso, habria que establecer el parámetro ``acks=all``. 
 
 ``ACKS`` tiene 3 variantes:
  - 0 = Sin comprobación de que el mensaje se ha escrito correctamente.
@@ -119,7 +119,7 @@ Además de establecer el ``min.insync`` (ISR) también hay que configurar el env
 ![](imgs/p2.png)
 
  - Puedes especificar que sea por ``Round-Robin`` para que los mensajes se repartan entre las particiones existentes de forma equitativa.
- - Puedes especificar una ``particion de forma explicita``. Por ejemplo: "Productor 1 que envie al topic A - particion 0"
+ - Puedes especificar una ``partición de forma explícita``. Por ejemplo: "Productor 1 que envíe al topic A - partición 0"
  - Por ``key-hash``. Se utiliza para distribuir los mensajes de forma equitativa entre las diferentes particiones y al mismo tiempo garantiza que todos los mensajes con la misma clave sean enviados a la misma partición. 
  
  
@@ -186,7 +186,7 @@ Se comporta de forma similar al Round Robin, pero intenta minimizar el movimient
 ![](imgs/consumerGroups3.png)
 
 
- * [Mas info](https://medium.com/streamthoughts/understanding-kafka-partition-assignment-strategies-and-how-to-write-your-own-custom-assignor-ebeda1fc06f3)
+ * [Más info](https://medium.com/streamthoughts/understanding-kafka-partition-assignment-strategies-and-how-to-write-your-own-custom-assignor-ebeda1fc06f3)
 
 # Docker y Kafka
 
@@ -290,7 +290,7 @@ Se ha utilizado la siguiente consulta para que el gráfico de vela pudiera consu
 
 ```sql
 SELECT
-  DATE_BIN(INTERVAL '2 minutes', time, '1970-01-01T00:00:00Z'::TIMESTAMP) AS _time,
+  DATE_BIN(INTERVAL '5 minutes', time, '1970-01-01T00:00:00Z'::TIMESTAMP) AS _time,
   first_value(close_price ORDER BY time) AS Open,
   MAX(close_price) AS High,
   MIN(close_price) AS Low,
