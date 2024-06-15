@@ -18,7 +18,6 @@
 - [Grafana](#visualización)
 
 
-
 # Introducción
 
 * Gif de kafka UI de como recibe el proceso?
