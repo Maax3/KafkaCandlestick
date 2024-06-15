@@ -7,6 +7,8 @@
 - [Esquema general del proyecto](#esquema-general-del-proyecto)
     - [Estructura del proyecto](#estructura-del-proyecto)
 - [Productor](#productor)
+    - [ISR](#réplicas-síncronas-isr)
+    - [Parámetro acks](#parámetro-acks)
     - [Ejemplo del key-hash](#ejemplo-del-key-hash)
 - [Consumidores](#consumidores)
     - [Estrategias de consumo](#estrategias-de-consumo)
@@ -19,9 +21,6 @@
 
 
 # Introducción
-
-* Gif de kafka UI de como recibe el proceso?
-* Gif de los mensajes en consola
 
 * [URL pública de Grafana](https://mesekav225.grafana.net/public-dashboards/6cc9bbf2b39e48b3965aa73c4a4d91a5)
 
@@ -58,7 +57,7 @@ El proyecto se apoya en un archivo ``DOCKER`` que contiene todos los servicios n
   cd ..
   docker-compose up -d
 ```
-4. Lanzar el script launch.sh
+4. Lanzar el script ``launch.sh``
 ```py
   ./launch.sh
 ```
@@ -99,6 +98,15 @@ Después, **los consumidores** consumen el mensaje deserializando el contenido m
 
 ![](imgs/p1.png)
 
+#### Réplicas síncronas (ISR)
+
+Por defecto, las réplicas seguidoras (no líder) copian la información de forma asíncrona. Kafka permite modificar ese comportamiento y definir réplicas síncronas.
+
+Esto permite una mayor tolerancia a fallos y asegura la disponibilidad de los datos. Por ejemplo:
+
+Si sólo hay una copia síncrona y esta muere, puede haber pérdida de datos. Si existen más de una, es casi imposible perder información.
+
+#### Parámetro 'acks'
 Además de establecer el ``min.insync`` (ISR) también hay que configurar el envio de mensajes que hace el productor, en este caso, habria que establecer el parámetro ``acks=all``. 
 
 ``ACKS`` tiene 3 variantes:
@@ -154,7 +162,7 @@ El parámetro ``earliest`` permite a un consumidor volver a **leer desde el prin
 
 Como se ha mencionado antes, Kafka incluye varias estrategias y también te permite crear algoritmos personalizados:
  - RangeAssignor (por defecto)
- - RoundRobin
+ - Round Robin
  - StickyAssignor
 
  #### RangeAssignor
@@ -187,11 +195,13 @@ A continuación se van a explicar los servicios más importantes y su configurac
 ## Kafka-server / Broker
 
 #### ¿Qué es un Broker?
-Un broker en Kafka es un servidor que almacena datos y participa en el intercambio de mensajes en un clúster de Kafka. Gestiona el almacenamiento y la réplica de la información.
+Un broker en Kafka es una estructura lógica que almacena información. Gestiona el almacenamiento y la réplica de los datos.
 
 #### Configuración
 Dentro de kafka, existe un archivo llamado ``config.properties`` que permite modificar la configuración del servidor. En el caso de ``DOCKER`` cada parámetro se representa con las variables de entorno, siguiendo la siguiente nomenclatura:
 - ``MI_PARAMETRO_KAFKA:10`` en lugar de ``mi.parametro.kafka=10``.
+
+***Disclaimer:** puede diferir según la imagen docker que se utilice*
 
 #### Ejemplo en Docker
 
@@ -246,7 +256,9 @@ Este servicio permite visualizar de forma gráfica todo lo que hace Kafka tras l
 - Seguimiento de los consumidores, su nº, grupo, ID...
 - Recepción en vivo de los mensajes, nº de mensajes consumidos etc...
 
-[AÑADIR FOTOS]
+![](imgs/ui1.png)
+
+![](imgs/ui2.png)
 
 ## Schema-registry
 
@@ -264,7 +276,7 @@ El servicio centraliza y registra los esquemas de datos para asegurar la compati
 
 Dentro del proyecto, utilizamos el script ``avro_schema.sh`` en ``launch.sh`` para crear el esquema de datos de forma automática.
 
-[AÑADIR FOTOS]
+![](imgs/esq.png)
 
 # Influx
 
@@ -304,6 +316,7 @@ ORDER BY _time
 
 ### Gráficos
 
-[insertar GIF de BIT]
-[insertar GIF de ETH]
+![](imgs/vela4.png)
+
+![](imgs/vela2.png)
 
