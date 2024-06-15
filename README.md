@@ -7,15 +7,15 @@
 - [Esquema general del proyecto](#esquema-general-del-proyecto)
     - [Estructura del proyecto](#estructura-del-proyecto)
 - [Productor](#productor)
-      - [Ejemplo del key-hash](#ejemplo-del-key-hash)
+    - [Ejemplo del key-hash](#ejemplo-del-key-hash)
 - [Consumidores](#consumidores)
     - [Estrategias de consumo](#estrategias-de-consumo)
 - [Docker y Kafka](#docker-y-kafka)
   - [Kafka-server / Broker](#kafka-server--broker)
   - [Kafka-UI](#kafka-ui)
   - [Schema-registry](#schema-registry)
-- [Influx](#influx)
-- [Visualización - Grafana](#visualización---grafana)
+- [InfluxDB](#influx)
+- [Grafana](#visualización)
 
 
 
@@ -131,7 +131,10 @@ Además de establecer el ``min.insync`` (ISR) también hay que configurar el env
 
 **Como funciona el key-hash internamente:**
 
-Kafka toma la clave del mensaje, calcula su hash y luego aplica una operación de módulo con el número de particiones del topic (hash(key) % num_partitions). El resultado de esta operación es el índice de la partición a la que se enviará el mensaje
+Kafka toma la clave del mensaje, calcula su hash y luego aplica una operación de módulo con el número de particiones del topic:
+- ``hash(key) % num_partitions`` 
+   
+El resultado es el índice de la partición a la que se enviará el mensaje.
 
 
 # Consumidores
@@ -294,7 +297,7 @@ ORDER BY _time
 * ``MIN("close_price"):`` Selecciona el precio más bajo de la moneda dentro en el intervalo.
 
 
-# Visualización - Grafana
+# Visualización
 
 ### ¿Qué es Grafana?
 
