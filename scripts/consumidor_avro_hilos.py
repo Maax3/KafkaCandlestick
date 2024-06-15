@@ -45,8 +45,6 @@ influxdb_client = InfluxDBClient(
   token=os.getenv("TOKEN"), 
   org=os.getenv("ORG")
 )
-
-bucket="criptobucket"
 write_api = influxdb_client.write_api(write_options=SYNCHRONOUS)
 
 # Función para deserializar mensajes Avro
@@ -67,7 +65,7 @@ def ver_mensajes(consumer):
     tiempo_actual = dt.datetime.utcnow()
     timestamp = tiempo_actual.isoformat() + 'Z'  # Añadir 'Z' para indicar que es en formato UTC
     registro = (
-      Point("criptomonedas123")
+      Point(os.getenv("POINT_NAME"))
       .tag("Coin", mensaje['nombre'])
       .field("highest_bid", mensaje['bid'])
       .field("bid_size_sum", mensaje['bid_size'])
@@ -79,7 +77,7 @@ def ver_mensajes(consumer):
       .field("daily_min_price", mensaje['precio_minimo'])
       .field("close_price", mensaje['precio_ultimo'])).time(timestamp)
     
-    write_api.write(bucket=bucket, org=os.getenv("ORG"), record=registro)
+    write_api.write(bucket=os.getenv("BUCKET_NAME"), org=os.getenv("ORG"), record=registro)
 
 # Creamos un hilo para cada consumidor, o en otras palabras, asignamos la funcion ver_mensajes a cada consumidor
 threads = []

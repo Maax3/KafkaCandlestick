@@ -1,3 +1,24 @@
+# Indice
+- [Indice](#indice)
+- [Introducción](#introducción)
+- [Instalación y prueba](#instalación-y-prueba)
+    - [Requerimientos](#requerimientos)
+    - [Setup paso a paso](#setup-paso-a-paso)
+- [Esquema general del proyecto](#esquema-general-del-proyecto)
+    - [Estructura del proyecto](#estructura-del-proyecto)
+- [Productor](#productor)
+      - [Ejemplo del key-hash](#ejemplo-del-key-hash)
+- [Consumidores](#consumidores)
+    - [Estrategias de consumo](#estrategias-de-consumo)
+- [Docker y Kafka](#docker-y-kafka)
+  - [Kafka-server / Broker](#kafka-server--broker)
+  - [Kafka-UI](#kafka-ui)
+  - [Schema-registry](#schema-registry)
+- [Influx](#influx)
+- [Visualización - Grafana](#visualización---grafana)
+
+
+
 # Introducción
 
 * Gif de kafka UI de como recibe el proceso?
@@ -5,14 +26,49 @@
 
 * [URL pública de Grafana](https://mesekav225.grafana.net/public-dashboards/6cc9bbf2b39e48b3965aa73c4a4d91a5)
 
-Este proyecto busca poner en práctica lo aprendido con ``KAFKA``. Consiste en una representación en tiempo real de un gráfico de velas sobre las criptomonedas más populares. 
+Este proyecto busca poner en práctica lo aprendido con ``KAFKA``. Consiste en una representación en tiempo real de un gráfico de velas japonesas sobre las criptomonedas más populares. 
 
-La base del proyecto se apoyoa en un archivo ``DOCKER`` que contiene todos los servicios necesarios para ``KAFKA`` así como sus servidores (brokers).
+El proyecto se apoya en un archivo ``DOCKER`` que contiene todos los servicios necesarios, ``InfluxDB`` para las series temporales y ``Grafana`` para la visualización y creación del gráfico.
 
-Además de Docker he usado:
- - ``Python`` para realizar los diferentes scripts de los productores/consumidores.
- - ``InfluxDB`` como almacenamiento de los datos temporales.
- - ``Grafana`` para visualizar los datos en Streaming.
+# Instalación y prueba
+
+### Requerimientos
+- Tener instalado python3.
+- Tener instalado docker.
+- Abrir y configurar una cuenta cloud en InfluxDB y Grafana.
+- Configurar los parámetros en el archivo env.
+
+*Algunas versiones recientes de Python pueden dar problemas con la librería de Kafka. Si ocurre, recomiendo utilizar una versión de Python inferior.*
+
+### Setup paso a paso
+
+1. Creación del entorno python
+  
+  ```py
+    python -m venv kafka-venv
+  ```
+
+2. Instalación de las dependencias
+  ```py
+    cd config
+    pip install -r librerias.txt
+  ```
+
+3. Lanzar docker
+```py
+  cd ..
+  docker-compose up -d
+```
+4. Lanzar el script launch.sh
+```py
+  ./launch.sh
+```
+
+*Si no tiene permisos lanzar en la misma consola bash de VScode:*
+
+```py
+  chmod +x launch.sh
+```
 
  # Esquema general del proyecto
 
@@ -34,16 +90,27 @@ Además de Docker he usado:
 | 2 |ISR | Estructura de datos que almacena los mensajes |
 
 
-Tenemos un productor que, en este caso, obtiene datos de una API de criptomonedas y envía los mensajes al Topic creado mediante el método de ``key-hash``.  
+Tenemos un **productor** que, en este caso, obtiene datos de una API de criptomonedas y envía los mensajes al Topic creado mediante el método de ``key-hash`` asegurando que cada mensaje vaya a una determinada partición.
 
+**El mensaje** se serializa y se transmite a Kafka siguiendo el esquema Avro. Entonces, mediante el parámetro ``acks=all`` el productor espera la confirmación de que los datos se han recibido y copiado en el líder y réplicas síncronas (ISR).
 
-# Esquema interno del proceso de datos
-
-![](imgs/kafka_serialization2.png)
+Después, **los consumidores** consumen el mensaje deserializando el contenido mediante el mismo esquema. 
 
 # Productor
 
-### A la hora de definir la particion en el Productor:
+![](imgs/p1.png)
+
+Además de establecer el ``min.insync`` (ISR) también hay que configurar el envio de mensajes que hace el productor, en este caso, habria que establecer el parámetro ``acks=all``. 
+
+``ACKS`` tiene 3 variantes:
+ - 0 = Sin comprobación de que el mensaje se ha escrito correctamente.
+ - 1 = El mensaje ha llegado con éxito al líder.
+ - all = Se ha completo con éxito en todas las replicas ISR + líder.
+
+### A la hora de definir como envía el mensaje el Productor con send():
+
+![](imgs/p2.png)
+
  - Puedes especificar que sea por ``Round-Robin`` para que los mensajes se repartan entre las particiones existentes de forma equitativa.
  - Puedes especificar una ``particion de forma explicita``. Por ejemplo: "Productor 1 que envie al topic A - particion 0"
  - Por ``key-hash``. Se utiliza para distribuir los mensajes de forma equitativa entre las diferentes particiones y al mismo tiempo garantiza que todos los mensajes con la misma clave sean enviados a la misma partición. 
@@ -69,19 +136,139 @@ Kafka toma la clave del mensaje, calcula su hash y luego aplica una operación d
 
 # Consumidores
 
-# Docker - Kafka
+ Un grupo de consumidores permite procesar los mensajes en conjunto de una o varias particiones de un topico. Los consumidores de un mismo grupo no pueden pisarse entre ellos, de forma que *se puede establecer diferentes estrategias de consumo*:
+ - RangeAssignor (por defecto)
+ - Round Robin
+ - StickyAssignor
 
-## Kafka
+![](imgs/c1.png)
+
+* El ``group_id`` permite definir el grupo de consumidores.
+* El ``client_id`` define un nombre único a cada consumidor.
+
+El parámetro ``earliest`` permite a un consumidor volver a **leer desde el principio** todos los mensajes, mientras que ``latest`` forzaría a los consumidores a leer desde el último mensaje disponible.
+
+### Estrategias de consumo
+
+Como se ha mencionado antes, Kafka incluye varias estrategias y también te permite crear algoritmos personalizados:
+ - RangeAssignor (por defecto)
+ - RoundRobin
+ - StickyAssignor
+
+ #### RangeAssignor
+
+ Cuando hay múltiples tópicos y consumidores, agrupa las diferentes particiones por su member-id. De modo que el ``consumidor[0]`` se ocuparía de todas las ``particiones[0]``, mientras que el ``consumidor[1]`` lo haria de las ``particiones[1]`` independientemente del tópico.
+
+![](imgs/consumerGroupStr.png)
+
+#### RoundRobinAssignor
+
+Distribuye las particiones de forma equitativa entre los diferentes consumidores **ignorando la partición** de la cual provengan. Esta estrategia, aunque útil, puede presentar problemas a la hora de la reasignación cuando uno de los consumidores pase a no disponible.
+
+![](imgs/consumerGroups1.png)
+
+![](imgs/consumerGroups2.png)
+
+#### StickyAssignor
+
+Se comporta de forma similar al Round Robin, pero intenta minimizar el movimiento (asignación de consumo) entre las diferentes particiones. Usando el ejemplo anterior, si el consumidor C2 muere o abandona el grupo, entonces solo se produce una reasignación de las particiones que consumía el C2 => C3.
+
+![](imgs/consumerGroups3.png)
+
+
+ * [Mas info](https://medium.com/streamthoughts/understanding-kafka-partition-assignment-strategies-and-how-to-write-your-own-custom-assignor-ebeda1fc06f3)
+
+# Docker y Kafka
+
+A continuación se van a explicar los servicios más importantes y su configuración.
+
+## Kafka-server / Broker
+
+#### ¿Qué es un Broker?
+Un broker en Kafka es un servidor que almacena datos y participa en el intercambio de mensajes en un clúster de Kafka. Gestiona el almacenamiento y la réplica de la información.
+
+#### Configuración
+Dentro de kafka, existe un archivo llamado ``config.properties`` que permite modificar la configuración del servidor. En el caso de ``DOCKER`` cada parámetro se representa con las variables de entorno, siguiendo la siguiente nomenclatura:
+- ``MI_PARAMETRO_KAFKA:10`` en lugar de ``mi.parametro.kafka=10``.
+
+#### Ejemplo en Docker
+
+```yml
+# ::::: KAFKA BROKER ::::::::::::
+  broker_1:
+    image: confluentinc/cp-kafka:latest
+    hostname: broker_1
+    container_name: broker_1
+    depends_on:
+      - zookeeper
+    ports:
+      - "9090:9090"
+      - "19090:19090"
+      - "29090:29090"
+    networks:
+      - kafka_net
+    environment:
+      KAFKA_BROKER_ID: 1
+      KAFKA_ZOOKEEPER_CONNECT: 'zookeeper:2181'
+      KAFKA_INTER_BROKER_LISTENER_NAME: RED_INTERNA
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: RED_INTERNA:PLAINTEXT,RED_EXTERNA:PLAINTEXT,RED_LOCAL:PLAINTEXT #plaintext = sin cifrado
+      KAFKA_ADVERTISED_LISTENERS: 
+        RED_EXTERNA://kafka-azure.norwayeast.cloudapp.azure.com:9090,
+        RED_INTERNA://broker_1:29090,
+        RED_LOCAL://localhost:19090
+      KAFKA_LISTENERS: 
+        RED_EXTERNA://:9090, 
+        RED_INTERNA://broker_1:29090, 
+        RED_LOCAL://broker_1:19090
+      KAFKA_NUM_PARTITIONS: 2
+      KAFKA_DEFAULT_REPLICATION_FACTOR: 3
+      KAFKA_MIN_INSYNC_REPLICAS: 2
+      KAFKA_LOG_DIRS: /var/lib/kafka/data
+    restart: always
+```
+
+#### Red de Kafka
+
+Se definen 3 tipos de redes para el servidor:
+- ``RED_INTERNA:`` permite la comunicación interna entre los diferentes contenedores (brokers, zookeper) mediante el nombre de su ``host`` y el parámetro de red ``network`` de Docker.
+- ``RED_LOCAL``: permite la comunicación del localhost (tu máquina) con los contenedores de Docker.
+- ``RED_EXTERNA``: permite exponer los servidores a los servicios externos (Cloud Grafana, Databricks...).
+
+*También es posible definir si la información viaja cifrada o en texto plano (``PLAINTEXT``)*
 
 ## Kafka-UI
 
+Este servicio permite visualizar de forma gráfica todo lo que hace Kafka tras las bambalinas. Proporciona:
+- Número de topics, particiones, réplicas
+- Número de mensajes, offsets y su contenido/valor
+- Seguimiento de los consumidores, su nº, grupo, ID...
+- Recepción en vivo de los mensajes, nº de mensajes consumidos etc...
+
+[AÑADIR FOTOS]
+
 ## Schema-registry
+
+#### ¿Qué es un esquema de registro?
+ El Schema Registry de Kafka es un servicio que almacena y gestiona los esquemas de datos utilizados para la serialización y deserialización de los mensajes.
+
+#### Ventajas
+
+El servicio centraliza y registra los esquemas de datos para asegurar la compatibilidad entre productores y consumidores. 
+
+- Proporciona validación de esquemas para garantizar que los mensajes sean compatibles con los esquemas esperados por los consumidores.
+- Permite la evolución controlada de los esquemas, facilitando cambios y actualizaciones sin interrupciones en la comunicación entre aplicaciones.
+
+#### Funcionamiento
+
+Dentro del proyecto, utilizamos el script ``avro_schema.sh`` en ``launch.sh`` para crear el esquema de datos de forma automática.
+
+[AÑADIR FOTOS]
 
 # Influx
 
-### ¿Qué es InfluxDB?
+#### ¿Qué es InfluxDB?
 
-InfluxDB es una base de datos orientada a series temporales que combina campos indexados (fields) y no indexados (tags) permitiendo realizar consultas muy rápidas sobre nuestros datos. 
+InfluxDB es una base de datos orientada a series temporales que combina campos indexados (fields) y no indexados (tags) permitiendo realizar consultas muy rápidas sobre nuestros datos. Los datos se organizan en medidas (measurements), series, y puntos, donde cada punto tiene un timestamp.
 
 ### Uso
 
@@ -94,7 +281,7 @@ SELECT
   MAX(close_price) AS High,
   MIN(close_price) AS Low,
   last_value(close_price ORDER BY time) AS Close
-FROM "criptomonedas123"
+FROM "criptomonedas666"
 WHERE "Coin" IN ('tBTCUSD')
 GROUP BY _time
 ORDER BY _time
@@ -118,324 +305,3 @@ ORDER BY _time
 [insertar GIF de BIT]
 [insertar GIF de ETH]
 
-
----------------------------------------------------------------------------------------------------------
-
-# Enlaces
-* [VIDEO - BASES DE KAFKA (RU)](https://www.youtube.com/watch?v=-AZOi3kP9Js)
-* [VIDEO - EJEMPLO DE KAFKA (NullSafe (ES))](https://www.youtube.com/watch?v=MA-nxL14fr4&ab_channel=NullSafeArchitect)
-* [VIDEO - Conexion con Azure Databricks](https://www.youtube.com/watch?v=Sa3ubGXvT44&ab_channel=NextGenLearning)
-* [VIDEO - CONFIG DE INFLUXDB y GRAFANA CLOUD](https://youtu.be/pPKFafZug2k?feature=shared)
-* [DOCUMENTACION VARIABLES KAFKA](https://docs.confluent.io/platform/current/installation/configuration/broker-configs.html?#)
-* [DOCUMENTACION DE CONEXION CON DOCKER](https://docs.confluent.io/platform/current/kafka/multi-node.html#cp-multi-node)
-* [DOCUMENTACION VARIABLES DE KAFKA EN DOCKER](https://docs.confluent.io/platform/current/installation/docker/config-reference.html#config-reference)
-* [DOCUMENTACION sobre Kafka SQL o KSQL y sus diferencias con Kafka Stream API](https://es.slideshare.net/KaiWaehner/kafka-streams-vs-ksql-for-stream-processing-on-top-of-apache-kafka-142127337)
-* [DOCUMENTACION GUARDAR DATOS USANDO PYTHON EN INFLUXDB](https://docs.influxdata.com/influxdb/v2/api-guide/client-libraries/python/)
-
-
-
-
-# Apis
-* cryptoCompare
-* CoinMarketCap
-* CoinGecko
-* Bitfinex
-* https://github.com/Crypto-toolbox/btfxwss
-
-# Configuración
-
-Ver tu IP pública
-
-```sh
-curl ifconfig.me
-```
-
-Crear un consumidor (dentro del contenedor):
-
-* cd /bin
-```sh
-  kafka-console-consumer --bootstrap-server broker_3:29092 --topic mi_topico
-```
-
-Crear un productor (dentro del contenedor): 
-* cd /bin
-```sh
-  kafka-console-producer --bootstrap-server broker_1:29090 --topic mi_topico
-```
-
-Para verificar que el tópico tiene las configuraciones correctas:
-* cd /bin
-```sh
-  kafka-topics --describe --zookeeper zookeeper:2181 --topic mi_topico
-```
-
-## Variables de entorno
-
-#### KAFKA_LISTENERS - KAFKA_ADVERTISED_LISTENERS
-``KAFKA_LISTENERS`` especifica dónde Kafka debe escuchar las conexiones entrantes, mientras que ``KAFKA_ADVERTISED_LISTENERS`` especifica qué endpoints deben ser anunciados a los clientes para que puedan establecer conexiones. La diferencia clave es que ``KAFKA_ADVERTISED_LISTENERS`` se utiliza para la comunicación externa con los clientes, mientras que ``KAFKA_LISTENERS`` se utiliza para la comunicación interna entre los componentes de Kafka.
-
-# Tests
-
-```yml
----
-version: '3'
-services:
-  zookeeper:
-    image: confluentinc/cp-zookeeper:latest
-    hostname: zookeeper
-    container_name: zookeeper
-    ports:
-      - "2181:2181"
-    networks:
-      - kafka_net
-    environment:
-      ZOOKEEPER_CLIENT_PORT: 2181
-      ZOOKEEPER_TICK_TIME: 2000
-      #ZOOKEEPER_DATA_DIR: /var/lib/zookeeper/data
-    #volumes:
-     # - ./zookeeper-data:/var/lib/zookeeper/data
-
-  broker_1:
-    image: confluentinc/cp-kafka:latest
-    hostname: broker_1
-    container_name: broker_1
-    depends_on:
-      - zookeeper
-    ports:
-      - "9090:9090"
-      - "19090:19090"
-      - "29090:29090"
-    networks:
-      - kafka_net
-    environment:
-      KAFKA_BROKER_ID: 1
-      KAFKA_ZOOKEEPER_CONNECT: 'zookeeper:2181'
-      KAFKA_INTER_BROKER_LISTENER_NAME: RED_INTERNA
-      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: RED_INTERNA:PLAINTEXT,RED_EXTERNA:PLAINTEXT,RED_LOCAL:PLAINTEXT #plaintext = sin cifrado
-      KAFKA_ADVERTISED_LISTENERS: 
-        RED_EXTERNA://adb-3223500186722566.6.azuredatabricks.net:9090,
-        RED_INTERNA://broker_1:29090,
-        RED_LOCAL://localhost:19090
-      KAFKA_LISTENERS: 
-        RED_EXTERNA://:9090, 
-        RED_INTERNA://broker_1:29090, 
-        RED_LOCAL://broker_1:19090
-      KAFKA_NUM_PARTITIONS: 2
-      KAFKA_DEFAULT_REPLICATION_FACTOR: 3
-      KAFKA_MIN_INSYNC_REPLICAS: 2
-      KAFKA_LOG_DIRS: /var/lib/kafka/data
-    volumes:
-      - ./logs/kafka-logs-broker1:/var/lib/kafka/data
-      - ./server-logs/kafka-broker1:/var/log/kafka
-
-  broker_2:
-    image: confluentinc/cp-kafka:latest
-    hostname: broker_2
-    container_name: broker_2
-    depends_on:
-      - zookeeper
-    ports:
-      - "9091:9091"
-      - "29091:29091"
-      - "19091:19091"
-    networks:
-      - kafka_net
-    environment:
-      KAFKA_BROKER_ID: 2
-      KAFKA_ZOOKEEPER_CONNECT: 'zookeeper:2181'
-      KAFKA_INTER_BROKER_LISTENER_NAME: RED_INTERNA
-      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: RED_INTERNA:PLAINTEXT,RED_EXTERNA:PLAINTEXT,RED_LOCAL:PLAINTEXT
-      KAFKA_ADVERTISED_LISTENERS: 
-        RED_EXTERNA://adb-3223500186722566.6.azuredatabricks.net:9091,
-        RED_INTERNA://broker_2:29091,
-        RED_LOCAL://localhost:19091
-      KAFKA_LISTENERS: 
-        RED_EXTERNA://:9091, 
-        RED_INTERNA://broker_2:29091, 
-        RED_LOCAL://broker_2:19091
-      KAFKA_NUM_PARTITIONS: 2
-      KAFKA_DEFAULT_REPLICATION_FACTOR: 3
-      KAFKA_MIN_INSYNC_REPLICAS: 2
-      KAFKA_LOG_DIRS: /var/lib/kafka/data
-    volumes:
-      - ./logs/kafka-logs-broker2:/var/lib/kafka/data
-      - ./server-logs/kafka-broker2:/var/log/kafka
-
-  broker_3:
-    image: confluentinc/cp-kafka:latest
-    hostname: broker_3
-    container_name: broker_3
-    depends_on:
-      - zookeeper
-    ports:
-      - "9092:9092"
-      - "19092:19092"
-      - "29092:29092"
-    networks:
-      - kafka_net
-    environment:
-      KAFKA_BROKER_ID: 3
-      KAFKA_ZOOKEEPER_CONNECT: 'zookeeper:2181'
-      KAFKA_INTER_BROKER_LISTENER_NAME: RED_INTERNA
-      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: RED_INTERNA:PLAINTEXT,RED_EXTERNA:PLAINTEXT,RED_LOCAL:PLAINTEXT
-      KAFKA_ADVERTISED_LISTENERS: 
-
-        RED_INTERNA://broker_3:29092,
-        RED_LOCAL://localhost:19092
-      KAFKA_LISTENERS: 
-        RED_EXTERNA://:9092, 
-        RED_INTERNA://broker_3:29092, 
-        RED_LOCAL://broker_3:19092
-      KAFKA_NUM_PARTITIONS: 2
-      KAFKA_DEFAULT_REPLICATION_FACTOR: 3
-      KAFKA_MIN_INSYNC_REPLICAS: 2
-      KAFKA_LOG_DIRS: /var/lib/kafka/data
-    volumes:
-      - ./logs/kafka-logs-broker3:/var/lib/kafka/data
-      - ./server-logs/kafka-broker3:/var/log/kafka
-
-  kafka-ui:
-    image: provectuslabs/kafka-ui:latest
-    hostname: kafka-ui
-    container_name: kafka-ui
-    ports:
-      - "8080:8080"
-    networks:
-      - kafka_net
-    depends_on:
-      - broker_1
-      - broker_2
-      - broker_3
-      - zookeeper
-    environment:
-      KAFKA_CLUSTERS_0_NAME: local
-      KAFKA_CLUSTERS_0_BOOTSTRAPSERVERS: broker_1:29090,broker_2:29091,broker_3:29092
-      KAFKA_CLUSTERS_0_ZOOKEEPER: zookeeper:2181
-
-networks:
-  kafka_net:
-    name: network_kafka_conexion
-  
-
-```
-
-# Consumidores
-
-Existen conectores específicos de Kafka para InfluxDB, como Kafka Connect, que permiten la ingesta continua de datos desde tópicos de Kafka hacia InfluxDB sin necesidad de escribir código personalizado.
-
-- Un grupo de consumidores es un grupo que funciona en conjunto para procesar los mensajes de una o varias particiones de un topico determinado. Cada particion en el topico
-puede ser asignada a un solo consumidor. TLDR: los consumidores de un mismo grupo de consumidores no pueden pisarse entre ellos, pero si si se trata de un grupo diferente de consumidores. El grupo de consumidores se establece con "group.id"
-
-Kafka tiene 3 patrones de consumo:
- - Exactly-Once: Garantiza que cada mensaje se procese exactamente una vez, eliminando los duplicados.
- - At-most-once: Garantiza que cada mensaje se envie al consumidor, pero no asegura que este lo haya procesado
- - At-Least-Once: Garantiza que cada mensaje se envie al consumidor y que se procese al menos una vez, pero puede provocar duplicados.
-
-Hay dos valores principales que se pueden usar para auto_offset_reset:
- - earliest: Esto significa que el consumidor comenzará a leer desde el offset más temprano disponible para el topic al que está suscrito. En otras palabras, si no hay un offset inicial disponible (porque es la primera vez que el consumidor se une al grupo o porque el offset inicial se ha perdido), el consumidor comenzará a leer desde el principio del registro de transacciones (commit log) del topic.
- - latest: Esto significa que el consumidor comenzará a leer desde el offset más reciente disponible para el topic al que está suscrito. Si no hay un offset inicial disponible, el consumidor comenzará a leer desde el final del registro de transacciones del topic.
-
- ### Estrategias de consumo
-
- Dentro de los grupos de consumidores puedes establecer diferentes estrategias que influyen en cómo se consumen los datos de las diferentes particiones y tópicos. Kafka incluye varias estrategias y también te permite crear algoritmos personalizados:
- - RangeAssignor (por defecto)
- - RoundRobin
- - StickyAssignor
-
- #### RangeAssignor
-
- Cuando hay múltiples tópicos y consumidores, agrupa las diferentes particiones por su member-id. De modo que el consumidor[0] se ocuparía de todas las particiones[0] de topic 1 y 2, mientras que el consumidor[1] lo haria de las particiones[1] de los distintos topics.
-
-![](imgs/consumerGroupStr.png)
-
-#### RoundRobinAssignor
-
-Distribuye las particiones de forma equitativa entre los diferentes consumidores ignorando de que topico provengan. Esta estrategia, aunque útil, puede presentar problemas a la hora de la reasignación cuando uno de los consumidores pase a no disponible.
-
-![](imgs/consumerGroups1.png)
-
-![](imgs/consumerGroups2.png)
-
-#### StickyAssignor
-
-Se comporta de forma similar al Round Robin, pero intenta minimizar el movimiento (asignación de consumo) entre las diferentes particiones. Usando el ejemplo anterior, si el consumidor C2 muere o abandona el grupo, entonces solo se produce una reasignación (particion A1 => C3).
-
-![](imgs/consumerGroups3.png)
-
-
- * [Mas info](https://medium.com/streamthoughts/understanding-kafka-partition-assignment-strategies-and-how-to-write-your-own-custom-assignor-ebeda1fc06f3)
-
-# Productor y particiones
-
-- Cada particion puede ser interpretada como una unidad independiente de streaming de mensajes. Tanto productores como consumidores pueden escribir y leer datos de forma concurrente.
-- Los offsets son únicos respecto a la partición. Es decir, si existen 2 particiones en un topico puede haber mensajes con un offset con el mismo valor.
-- Los mensajes se insertan de forma secuencial en una partición garantizando un orden conforme al valor del offset.
-- Una vez asignado el offset, este se vuelve inmutable.
-
-
-### ¿Qué es la serialización y cómo funciona?
-**Serialización** es el proceso de convertir un objeto o estructura de datos en un formato que puede ser almacenado o transmitido y luego reconstruido (deserializado) más tarde. En términos simples, la serialización convierte datos en una secuencia de bytes, mientras que la deserialización convierte esa secuencia de bytes de vuelta a su formato original.
-
-### ¿Por qué Kafka necesita serializar datos cuando un productor envía mensajes?
-- Respuesta corta: Por eficiencia
-
-**Por la compatibilidad:** 
-En Kafka, los datos deben ser convertidos a un formato binario antes de ser enviados a los brokers. 
-
-**Por la Interoperabilidad:** 
-- Diferentes sistemas y lenguajes de programación pueden interactuar con Kafka. La serialización garantiza que los datos enviados por un productor puedan ser interpretados correctamente por cualquier consumidor, independientemente del lenguaje de programación utilizado.
-
-**Por la Integridad de los datos:**
-- Al serializar los datos, se asegura que la estructura y el contenido de los datos se mantengan íntegros durante el proceso de transmisión y almacenamiento.
-
-### Líderes y Réplicas 
-
-En Kafka, cada partición tiene un líder y puede tener varias réplicas. El líder es el responsable de manejar todas las lecturas y escrituras de esa partición. Las réplicas actúan como copias de seguridad. Si un broker que actúa como líder falla, uno de los brokers que contiene una réplica puede asumir el rol de líder, garantizando la continuidad del servicio. Las replicas líder son las que tienen la carga de trabajo, si existe un rendimiento pobre hay que comprobar que los líderes esten correctamente distribuidos entre los brokers.
-
-Kafka intenta distribuir siempre las particiones de un tópico de manera equilibrada entre los brokers para balancear la carga. Así, un broker puede ser líder de varias particiones de diferentes tópicos o puedes tener múltiples brokers que son líderes de una sola partición dentro de un unico topico.
-
-Las replicas denominadas "seguidores" mandan peticiones a la partición líder de forma periodica para hacer el backup de los datos. Al hacerse de forma periodica y asincrona, puede existir un caso donde no todas las réplicas tengan los datos completos del líder en el momento de que este 'caiga' o 'muera'. Para solucionar esto existe el follower "ISR", que en esencia, es un parametro dentro de kafka llamado "min.insync.replicas" que permite cambiar el modo de escritura de asincrono a sincrono. De modo que, al mismo tiempo que se escriben los datos en el líder, se escriben en las réplicas ISR asignadas. 
-
-- Por ejemplo, si ponemos min.insync.replicas = 3, los datos se escribirán de forma sincrona en la particion líder y en 2 de sus réplicas "seguidoras".
-- El numero minimo de replicas sincronas debe ser igual o menor al numero de replicas que tengas sin contar el lider. En caso contrario, podria haber conflicto de escritura y en el almacenamiento de datos.
-
-Además de establecer el min.insync también hay que configurar el envio de mensajes que hace el productor, en este caso, habria que establecer el parámetro acks a "all". Acks tiene 3 variantes:
- - 0 = Sin comprobación de que el mensaje se ha escrito correctamente.
- - 1 = El mensaje ha llegado con éxtio al líder.
- - all = Se ha completo con éxito en todas las replicas ISR + líder.
-
-## A la hora de definir la particion en el Productor:
- - Puedes especificar que sea "Round-Robin" para que los mensajes se repartan entre las particiones existentes
- - Puedes especificar una particion de forma explicita, por ej "Productor 1 que envie al topic A - particion 0"
- - Por key-hash. Se utiliza para distribuir los mensajes de forma equitativa entre las diferentes particiones y al mismo tiempo garantiza que todos los mensajes con la misma clave sean enviados a la misma partición. Ejemplo:
-
-```python
-  producer.produce('transacciones', key='usuario1', value='Compra por $100', callback=delivery_report)
-  producer.produce('transacciones', key='usuario2', value='Compra por $50', callback=delivery_report)
-  producer.produce('transacciones', key='usuario1', value='Devolución por $20', callback=delivery_report)
-  producer.produce('transacciones', key='usuario3', value='Compra por $200', callback=delivery_report)
-```
-
-Si tenemos 3 particiones; Kafka podría distribuirlos tal que así:
- - Particion 0 (usuario1 y sus 2 mensajes)
- - Particion 1 (usuario2 y su mensaje)
- - Particion 2 (usuario3 y su mensaje)
-
-**Como funciona el key-hash internamente:**
-
-Kafka toma la clave del mensaje, calcula su hash y luego aplica una operación de módulo con el número de particiones del topic (hash(key) % num_partitions). El resultado de esta operación es el índice de la partición a la que se enviará el mensaje
-
-
-
-::::::::::OPTIMIZACION:::::::::
-
-Zero-Copy en Kafka es una técnica de optimización que permite transferir datos entre productores y consumidores sin copiarlos de un búfer de memoria a otro, lo que mejora significativamente el rendimiento del sistema.
-
-  
-# Apuntes varios sobre INFLUX DB
-
-Dentro de InfluxDB existen los campos (fields) y las etiquetas (tags). Los ``tags`` son opcionales, pero a diferencia de los ``fields`` están indexados. Por tanto, son útiles para guardar el metadata y realizar filtros/queries sobre ello. 
-
-In InfluxDB, a series is a collection of points that share a measurement, tag set, and field key. A point represents a single data record that has four components: a measurement, tag set, field set, and a timestamp. A point is uniquely identified by its series and timestamp.
-
-[Más info](https://docs.influxdata.com/influxdb/v1/concepts/key_concepts/)
